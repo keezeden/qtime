@@ -17,6 +17,10 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "devDependencies": {
     "concurrently": "^9.2.1"
   }

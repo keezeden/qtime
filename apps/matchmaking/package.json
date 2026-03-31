@@ -11,7 +11,8 @@
   "description": "",
   "dependencies": {
     "bullmq": "^5.71.1",
-    "dotenv-cli": "^11.0.0"
+    "dotenv-cli": "^11.0.0",
+    "@qtime/types": "*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

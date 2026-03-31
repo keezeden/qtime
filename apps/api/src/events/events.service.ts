@@ -4,9 +4,9 @@ import { Queue, JobsOptions, Job } from "bullmq";
 
 @Injectable()
 export class EventsService {
-  constructor(@InjectQueue("events") private readonly queue: Queue) {}
+  constructor(@InjectQueue("matchmaking") private readonly matchmakingQueue: Queue) {}
 
-  async push<T>(type: string, payload: T, options?: JobsOptions): Promise<Job> {
-    return await this.queue.add(type, payload, options);
+  async pushMatchmaking<T>(type: string, payload: T, options?: JobsOptions): Promise<Job> {
+    return await this.matchmakingQueue.add(type, payload, options);
   }
 }

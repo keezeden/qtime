@@ -1,34 +1,66 @@
-import { Worker } from "bullmq";
+import { PlayerQueuedEvent, Region } from "@qtime/types";
+import { Queue } from "bullmq";
+import { getTenSecondBlocksSince } from "./utils";
 
-const matchmakingWorker = new Worker(
-  "events",
-  async (job: any) => {
-    console.log("Job found! ", job.id);
+const queue = new Queue<PlayerQueuedEvent>("matchmaking:queued", {
+  connection: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
   },
-  {
-    connection: {
-      host: process.env.REDIS_HOST,
-      port: Number(process.env.REDIS_PORT),
+});
+
+const findMatches = (region: Region, queue: PlayerQueuedEvent[]) => {
+  const matches: PlayerQueuedEvent[][] = [];
+
+  const sorted = queue.sort((a, b) => {
+    const aDate = new Date(a.startTime).getTime();
+    const bDate = new Date(b.startTime).getTime();
+    return aDate - bDate;
+  });
+
+  for (const [playerIndex, player] of sorted.entries()) {
+    const waitMultiplier = getTenSecondBlocksSince(player.startTime);
+    const eloWindow = waitMultiplier * 50;
+
+    for (const [opponentIndex, opponent] of sorted.entries()) {
+      if (opponent.userId === player.userId) continue;
+
+      const eloDifference = Math.abs(player.elo - opponent.elo);
+      if (eloDifference > eloWindow) continue;
+
+      matches.push([player, opponent]);
+      sorted.splice(playerIndex, 1);
+      sorted.splice(opponentIndex, 1);
+    }
+  }
+
+  return matches;
+};
+
+const processQueue = async () => {
+  const players = await queue.getWaiting();
+
+  const regionalQueues = players.reduce(
+    (acc, item) => {
+      const region = item.data.region;
+      const regionalQueue = acc[region] ?? [];
+
+      regionalQueue.push(item.data);
+
+      return acc;
     },
-  },
-);
+    {} as Record<Region, PlayerQueuedEvent[]>,
+  );
 
-matchmakingWorker.on("ready", () => {
-  console.log("Worker is ready");
-});
+  const matches: PlayerQueuedEvent[][] = [];
+  const entries = Object.entries(regionalQueues) as [Region, PlayerQueuedEvent[]][];
 
-matchmakingWorker.on("active", (job) => {
-  console.log("Processing job", job.id);
-});
+  for (const [region, queue] of entries) {
+    const regionMatches = findMatches(region, queue);
+    matches.concat(regionMatches);
+  }
 
-matchmakingWorker.on("completed", (job) => {
-  console.log("Completed job", job.id);
-});
+  console.log("Matches found: ", matches);
+};
 
-matchmakingWorker.on("failed", (job, err) => {
-  console.log("Failed job", job?.id, err);
-});
-
-matchmakingWorker.on("error", (err) => {
-  console.log("Worker error", err);
-});
+setInterval(processQueue, 2000);
