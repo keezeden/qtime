@@ -2,14 +2,16 @@ import { PlayerQueuedEvent, Region } from "@qtime/types";
 import { Queue } from "bullmq";
 import { getTenSecondBlocksSince } from "./utils";
 
-const queue = new Queue<PlayerQueuedEvent>("matchmaking:queued", {
-  connection: {
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-  },
-});
+function createQueue() {
+  return new Queue<PlayerQueuedEvent>("matchmaking.queued", {
+    connection: {
+      host: process.env.REDIS_HOST,
+      port: Number(process.env.REDIS_PORT),
+    },
+  });
+}
 
-const findMatches = (region: Region, queue: PlayerQueuedEvent[]) => {
+export const findMatches = (region: Region, queue: PlayerQueuedEvent[]) => {
   const matches: PlayerQueuedEvent[][] = [];
 
   const sorted = queue.sort((a, b) => {
@@ -37,7 +39,19 @@ const findMatches = (region: Region, queue: PlayerQueuedEvent[]) => {
   return matches;
 };
 
-const processQueue = async () => {
+export const getRegionMatches = (regionalQueues: Record<Region, PlayerQueuedEvent[]>) => {
+  const matches: PlayerQueuedEvent[][] = [];
+  const entries = Object.entries(regionalQueues) as [Region, PlayerQueuedEvent[]][];
+
+  for (const [region, queue] of entries) {
+    const regionMatches = findMatches(region, queue);
+    matches.push(...regionMatches);
+  }
+
+  return matches;
+};
+
+const processQueue = async (queue: Queue<PlayerQueuedEvent>) => {
   const players = await queue.getWaiting();
 
   const regionalQueues = players.reduce(
@@ -52,15 +66,14 @@ const processQueue = async () => {
     {} as Record<Region, PlayerQueuedEvent[]>,
   );
 
-  const matches: PlayerQueuedEvent[][] = [];
-  const entries = Object.entries(regionalQueues) as [Region, PlayerQueuedEvent[]][];
-
-  for (const [region, queue] of entries) {
-    const regionMatches = findMatches(region, queue);
-    matches.concat(regionMatches);
-  }
+  const matches = getRegionMatches(regionalQueues);
 
   console.log("Matches found: ", matches);
 };
 
-setInterval(processQueue, 2000);
+if (process.env.NODE_ENV !== "test") {
+  const queue = createQueue();
+  setInterval(() => {
+    void processQueue(queue);
+  }, 2000);
+}

@@ -7,7 +7,7 @@ export class MatchmakingService {
   constructor(private events: EventsService) {}
 
   async queueMatchmaking(player: PlayerQueuedDto): Promise<{ jobId: string }> {
-    const job = await this.events.pushMatchmaking("matchmaking:queued", player);
+    const job = await this.events.pushMatchmaking("matchmaking.queued", player);
 
     if (!job.id) throw new InternalServerErrorException("Queue player failed.");
 

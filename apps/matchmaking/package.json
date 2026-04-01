@@ -3,19 +3,26 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start:dev": "dotenv -e ../../.env tsx src/index.ts"
+    "start:dev": "dotenv -e ../../.env tsx src/matchmaking.ts",
+    "test": "dotenv -e ../../.env jest",
+    "test:watch": "dotenv -e ../../.env jest --watch",
+    "start": "dotenv -e ../../.env tsx src/matchmaking.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@qtime/types": "*",
     "bullmq": "^5.71.1",
-    "dotenv-cli": "^11.0.0",
-    "@qtime/types": "*"
+    "dotenv-cli": "^11.0.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
-    "tsx": "^4.21.0"
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

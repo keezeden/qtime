@@ -8,6 +8,6 @@ export class MatchmakingController {
 
   @Post()
   create(@Body() playerQueuedDto: PlayerQueuedDto) {
-    return this.matchmakingService.queuePlayer(playerQueuedDto);
+    return this.matchmakingService.queueMatchmaking(playerQueuedDto);
   }
 }
