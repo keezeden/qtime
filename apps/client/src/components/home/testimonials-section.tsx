@@ -5,19 +5,17 @@ export function TestimonialsSection() {
     <section className="relative overflow-hidden bg-[#0b0e14] py-24">
       <div className="absolute -left-12 -top-12 h-64 w-64 rounded-full bg-[rgb(255,137,171,0.05)] blur-3xl" />
       <div className="absolute -bottom-12 -right-12 h-64 w-64 rounded-full bg-[rgb(38,254,220,0.05)] blur-3xl" />
-      <div className="px-6 md:px-20">
-        <h2 className="mb-16 text-center font-display text-5xl font-black uppercase italic tracking-tight">
+      <div className="mx-auto max-w-5xl px-5 md:px-8">
+        <h2 className="mb-16 text-center font-display text-4xl font-black uppercase italic tracking-tight md:text-5xl">
           The Pros Agree...
         </h2>
-        <div className="flex flex-wrap justify-center gap-12">
+        <div className="flex flex-wrap justify-center gap-10">
           {testimonials.map((testimonial) => (
             <div
               key={testimonial.handle}
               className={`relative max-w-xs transform ${testimonial.rotateClassName} ${testimonial.offsetClassName}`}
             >
-              <div
-                className={`border-4 bg-[#0b0e14] p-8 ${testimonial.borderClassName} ${testimonial.shadowClassName}`}
-              >
+              <div className={`border-4 bg-[#0b0e14] p-7 ${testimonial.borderClassName} ${testimonial.shadowClassName}`}>
                 <p className="text-lg font-semibold italic text-[#f3deff]">{testimonial.quote}</p>
                 <div className="mt-6 flex items-center gap-3">
                   <div
