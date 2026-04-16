@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0e14;
+  --foreground: #f3deff;
+  --muted: #c599ea;
+  --surface: #11141b;
+  --surface-strong: #1c2028;
+  --surface-bright: #22262f;
+  --border: #45484f;
+  --accent-pink: #ff89ab;
+  --accent-teal: #26fedc;
+  --accent-yellow: #ffe55c;
+  --accent-green: #6aff83;
+  --shadow-pink: #7e2146;
+  --shadow-teal: #006859;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-bright: var(--surface-bright);
+  --color-border: var(--border);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-teal: var(--accent-teal);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-green: var(--accent-green);
+  --color-shadow-pink: var(--shadow-pink);
+  --color-shadow-teal: var(--shadow-teal);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at top, rgb(255 137 171 / 0.16), transparent 24%),
+    radial-gradient(circle at 20% 28%, rgb(38 254 220 / 0.13), transparent 18%),
+    linear-gradient(180deg, #080a10 0%, #0b0e14 100%);
+}
+
+::selection {
+  background: var(--accent-teal);
+  color: #091015;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.tile-shadow-pink {
+  box-shadow: 6px 6px 0 var(--shadow-pink);
+}
+
+.tile-shadow-teal {
+  box-shadow: 6px 6px 0 var(--shadow-teal);
+}
+
+.panel-shadow {
+  box-shadow: 10px 10px 0 rgb(20 24 35 / 0.9);
+}
+
+.pressable-pink {
+  box-shadow: 4px 4px 0 #000;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pressable-pink:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 #000;
+}
+
+.pressable-teal {
+  box-shadow: 4px 4px 0 #000;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pressable-teal:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 #000;
+}
+
+.neon-frost {
+  background: rgb(34 38 47 / 0.6);
+  backdrop-filter: blur(20px);
+}

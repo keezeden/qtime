@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Lexend:wght@400;700&amp;family=Space+Grotesk:wght@400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed-variant": "#006859",
+              "surface-dim": "#0b0e14",
+              "outline-variant": "#1c2028",
+              "on-tertiary": "#615500",
+              "inverse-surface": "#fff7fe",
+              "primary-dim": "#ff56ed",
+              "primary-fixed": "#ff5eec",
+              "on-primary": "#590053",
+              "tertiary-container": "#f4db36",
+              "tertiary-dim": "#e5cd27",
+              "on-surface-variant": "#c599ea",
+              "tertiary-fixed-dim": "#e5cd27",
+              "surface-container-highest": "#1c2028",
+              "on-primary-fixed": "#000000",
+              "tertiary": "#ffe96c",
+              "surface-variant": "#1c2028",
+              "primary": "#ff89ab",
+              "on-surface": "#f3deff",
+              "background": "#0b0e14",
+              "surface-bright": "#22262f",
+              "on-tertiary-container": "#584d00",
+              "secondary-container": "#006b5b",
+              "error-container": "#a70138",
+              "surface-container-high": "#1c2028",
+              "on-secondary-fixed": "#00483d",
+              "on-secondary-container": "#ddfff5",
+              "surface-tint": "#ff89ab",
+              "surface": "#0b0e14",
+              "surface-container-lowest": "#000000",
+              "on-background": "#f3deff",
+              "inverse-primary": "#ac00a2",
+              "surface-container": "#11141b",
+              "inverse-on-surface": "#6b438d",
+              "on-primary-fixed-variant": "#550050",
+              "tertiary-fixed": "#f4db36",
+              "on-secondary": "#005d4f",
+              "primary-container": "#ff89ab",
+              "outline": "#45484f",
+              "on-error": "#490013",
+              "on-error-container": "#ffb2b9",
+              "secondary-fixed": "#26fedc",
+              "secondary-dim": "#00efce",
+              "primary-fixed-dim": "#ff2bef",
+              "on-tertiary-fixed-variant": "#625600",
+              "surface-container-low": "#0b0e14",
+              "secondary-fixed-dim": "#00efce",
+              "on-primary-container": "#0b0e14",
+              "error": "#ff6e84",
+              "error-dim": "#d73357",
+              "on-tertiary-fixed": "#433a00",
+              "secondary": "#26fedc"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Be Vietnam Pro"],
+              "label": ["Lexend"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .text-glow {
+        text-shadow: 0 0 20px rgba(255, 137, 171, 0.5);
+      }
+      .perspective-500 {
+        perspective: 500px;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-secondary selection:text-on-secondary-container">
+<!-- TopNavBar Shell -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 py-6 bg-[#0b0e14] dark:bg-[#0b0e14] border-b-4 border-[#1c2028] shadow-[0px_4px_0px_0px_rgba(34,38,47,1)]">
+<div class="text-3xl font-black text-[#ff89ab] italic tracking-tighter font-['Space_Grotesk']">QTime</div>
+<div class="hidden md:flex items-center gap-8 font-['Space_Grotesk'] tracking-tighter font-bold uppercase">
+<a class="text-[#ff89ab] border-b-4 border-[#ff89ab] pb-1 hover:skew-x-2 hover:scale-105 transition-all" href="#">Home</a>
+<a class="text-[#45484f] hover:skew-x-2 hover:scale-105 transition-all" href="#">Arena</a>
+<a class="text-[#45484f] hover:skew-x-2 hover:scale-105 transition-all" href="#">Skins</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#ff89ab] hover:skew-x-2 hover:scale-105 transition-all active:translate-y-1 active:shadow-none">
+<span class="material-symbols-outlined text-3xl" data-icon="monetization_on">monetization_on</span>
+</button>
+<button class="text-[#ff89ab] hover:skew-x-2 hover:scale-105 transition-all active:translate-y-1 active:shadow-none">
+<span class="material-symbols-outlined text-3xl" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</nav>
+<main class="pt-24 overflow-x-hidden">
+<!-- Hero Section -->
+<section class="relative min-h-[90vh] flex items-center justify-center px-4 md:px-20 overflow-hidden">
+<!-- Floating Background Shapes -->
+<div class="absolute inset-0 z-0 pointer-events-none opacity-40">
+<div class="absolute top-10 left-10 w-32 h-32 bg-primary/20 rounded-lg rotate-12 flex items-center justify-center text-5xl font-headline font-black text-primary border-b-8 border-primary-dim">Q</div>
+<div class="absolute bottom-20 right-10 w-24 h-24 bg-secondary/20 rounded-lg -rotate-6 flex items-center justify-center text-4xl font-headline font-black text-secondary border-b-8 border-secondary-dim">T</div>
+<div class="absolute top-1/4 right-1/4 w-16 h-16 bg-tertiary/20 rounded-lg rotate-[25deg] flex items-center justify-center text-2xl font-headline font-black text-tertiary border-b-8 border-tertiary-dim">Z</div>
+<div class="absolute bottom-1/4 left-1/4 w-40 h-2 bg-secondary rounded-full -rotate-45"></div>
+<div class="absolute top-1/3 left-1/3 w-20 h-20 border-4 border-dashed border-primary/30 rounded-full"></div>
+</div>
+<div class="relative z-10 text-center max-w-5xl space-y-12">
+<div class="inline-block transform -rotate-1">
+<h1 class="text-7xl md:text-9xl font-headline font-black tracking-tighter leading-none bg-gradient-to-br from-primary via-[#ff2b88] to-secondary bg-clip-text text-transparent drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] italic">
+                        QTIME
+                    </h1>
+</div>
+<p class="font-headline text-2xl md:text-4xl text-on-surface max-w-2xl mx-auto leading-tight font-extrabold -rotate-1">
+                    The Whacky 1v1 Letter Battle Where <span class="text-tertiary italic underline decoration-secondary">Chaos</span> is the Key.
+                </p>
+<div class="flex flex-col md:flex-row items-center justify-center gap-8">
+<button class="group relative bg-primary px-12 py-6 rounded-none text-3xl font-headline font-black text-on-primary shadow-[8px_8px_0px_0px_#1c2028] hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all rotate-2 active:scale-95 uppercase">
+                        PLAY NOW
+                    </button>
+<button class="bg-surface-container-high px-10 py-5 rounded-none border-4 border-outline-variant text-xl font-headline font-bold uppercase tracking-widest hover:-rotate-2 transition-transform">
+                        Watch Trailer
+                    </button>
+</div>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="px-6 md:px-20 py-24 space-y-12">
+<h2 class="text-5xl font-headline font-black text-secondary rotate-1 offset-x-4 uppercase italic">GAME FEATURES</h2>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- 1v1 Battle -->
+<div class="md:col-span-7 bg-surface-container-high p-10 rounded-none relative overflow-hidden flex flex-col justify-end min-h-[400px] border-b-8 border-black shadow-[8px_8px_0px_0px_#1c2028]">
+<div class="absolute top-0 right-0 p-8 transform rotate-12 opacity-20">
+<span class="material-symbols-outlined text-[12rem] text-secondary" data-icon="bolt">bolt</span>
+</div>
+<div class="relative z-10 space-y-4">
+<span class="bg-secondary text-[#0b0e14] px-4 py-1 rounded-none font-headline text-sm uppercase tracking-tighter font-bold">Live Action</span>
+<h3 class="text-4xl font-headline font-black text-on-surface uppercase italic">Real-Time Duels</h3>
+<p class="text-on-surface-variant text-lg font-body max-w-md">No waiting days for a turn. Fast-paced, synchronous 1v1 battles with kinetic animations and slapstick sound effects.</p>
+</div>
+</div>
+<!-- Skins -->
+<div class="md:col-span-5 bg-primary p-10 rounded-none flex flex-col justify-between border-b-8 border-primary-dim shadow-[8px_8px_0px_0px_#1c2028] rotate-1 group hover:-rotate-1 transition-transform">
+<div class="flex flex-wrap gap-4">
+<div class="w-16 h-16 bg-surface-bright rounded-none border-b-4 border-black flex items-center justify-center text-3xl font-headline font-black text-primary">A</div>
+<div class="w-16 h-16 bg-tertiary rounded-none border-b-4 border-tertiary-dim flex items-center justify-center text-3xl font-headline font-black text-on-tertiary">B</div>
+<div class="w-16 h-16 bg-secondary rounded-none border-b-4 border-secondary-dim flex items-center justify-center text-3xl font-headline font-black text-on-secondary">C</div>
+</div>
+<div class="mt-8">
+<h3 class="text-3xl font-headline font-black text-on-primary uppercase italic">Drip Your Tiles</h3>
+<p class="text-on-primary/80 text-lg font-body font-semibold">Collect wild skins from the Neon Cyber set to the Gooey Slime collection. Express your word-nerd soul.</p>
+</div>
+</div>
+<!-- Leaderboards -->
+<div class="md:col-span-12 bg-surface-container p-8 rounded-none border-b-8 border-black flex flex-col md:flex-row items-center gap-12 shadow-[8px_8px_0px_0px_#1c2028]">
+<div class="flex-1 space-y-4">
+<h3 class="text-5xl font-headline font-black text-tertiary tracking-tighter italic uppercase">GLOBAL CLIMB</h3>
+<p class="text-on-surface-variant text-xl font-body">Are you the smartest cookie? Prove it on our persistent global leaderboards. Weekly resets and massive coin prizes for the Top 10.</p>
+<div class="pt-4">
+<button class="bg-secondary text-[#0b0e14] px-8 py-3 rounded-none font-headline font-black uppercase hover:scale-105 transition-transform shadow-[4px_4px_0px_0px_#000]">VIEW RANKINGS</button>
+</div>
+</div>
+<div class="w-full md:w-1/2 bg-surface-dim rounded-none p-6 border-4 border-outline-variant space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface-bright rounded-none rotate-1 border-b-4 border-black">
+<div class="flex items-center gap-4">
+<span class="font-headline font-black text-tertiary">#1</span>
+<span class="font-headline font-bold text-on-surface uppercase">Lexi_Loom</span>
+</div>
+<span class="font-headline font-bold text-secondary">24,500 PTS</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-high rounded-none -rotate-1 border-b-4 border-black">
+<div class="flex items-center gap-4">
+<span class="font-headline font-black text-on-surface-variant">#2</span>
+<span class="font-headline font-bold text-on-surface uppercase">WordWiz99</span>
+</div>
+<span class="font-headline font-bold text-secondary">22,120 PTS</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonials -->
+<section class="py-24 bg-surface-container-low relative overflow-hidden">
+<div class="absolute -top-12 -left-12 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-12 -right-12 w-64 h-64 bg-secondary/5 rounded-full blur-3xl"></div>
+<div class="px-6 md:px-20">
+<h2 class="text-5xl font-headline font-black text-center mb-16 tracking-tight uppercase italic">THE PROS AGREE...</h2>
+<div class="flex flex-wrap justify-center gap-12">
+<!-- Speech Bubble 1 -->
+<div class="relative max-w-xs transform rotate-2">
+<div class="bg-surface p-8 rounded-none border-4 border-primary shadow-[8px_8px_0px_0px_#ff89ab]">
+<p class="font-body text-lg italic font-semibold text-on-surface">"I played a 72-point word and my opponent hit me with a slime-ball tile. 10/10 chaos."</p>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-bright border-2 border-primary overflow-hidden">
+<img alt="close-up portrait of a young gamer with neon hair and cool glasses smiling" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbUDjBvMIqrQidM69IiLV_wA-kKgvDLNJkXA81toRIofEYHWrjeNMmi-zx3LvFUxf8iBS20Xu0ymQqsr9Fqy5viSIJMNybEloPIml0Yl6_nl8vD-Duh9EheD-g_G8Kx4XyTpMqOsYNiZEUa9jPbd13PMC1MbVVuDiPY_Yp-GSG-e2SEfw9drUy_csgbT1mNzFbWlyd55x3UIA7zzBR5yuAeXamcl8qiQizdSHckMsEf9JJJOWzEv-bVw53F8XoLGY2wOBSwAASLbY"/>
+</div>
+<span class="font-headline text-sm font-bold text-primary uppercase tracking-tighter">@WordSlayer_X</span>
+</div>
+</div>
+<div class="absolute -bottom-4 left-10 w-8 h-8 bg-surface border-r-4 border-b-4 border-primary rotate-45"></div>
+</div>
+<!-- Speech Bubble 2 -->
+<div class="relative max-w-xs transform -rotate-3 mt-10 md:mt-20">
+<div class="bg-surface p-8 rounded-none border-4 border-secondary shadow-[8px_8px_0px_0px_#26fedc]">
+<p class="font-body text-lg italic font-semibold text-on-surface">"Finally, a word game that doesn't feel like a library session. Pure adrenaline!"</p>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-bright border-2 border-secondary overflow-hidden">
+<img alt="profile photo of a woman laughing with artistic urban lighting" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBexQ1rUMYs7n9huAwDYUDhaMSC-YUxTxi0Ukc5M_OVeWcMiHxMfxUqb3flAkZTczM737uKBEN3Rc_IXrF6xoBkAQShNwULfKSgprScseYHo5g6ymSPYsald7-JqE4IIz0PBL9ayyF9IXplIBp190mEoJ5ZLEb_nZ1Ml_4zHrsrL_XY8nWM23F9VVCXfPcoHJUCTu8Q6An7_1ClYf8H5OsgHEP--FE0xGjls5bZhgb_Ps47ke7y_Bo4FMfnpvZ4I5XP-Q-lVcEKd4"/>
+</div>
+<span class="font-headline text-sm font-bold text-secondary uppercase tracking-tighter">@ScrabbleQueen</span>
+</div>
+</div>
+<div class="absolute -bottom-4 left-10 w-8 h-8 bg-surface border-r-4 border-b-4 border-secondary rotate-45"></div>
+</div>
+<!-- Speech Bubble 3 -->
+<div class="relative max-w-xs transform rotate-1 mt-5">
+<div class="bg-surface p-8 rounded-none border-4 border-tertiary shadow-[8px_8px_0px_0px_#ffe96c]">
+<p class="font-body text-lg italic font-semibold text-on-surface">"The leaderboard drama is real. I haven't slept in three days. Send help and more tiles."</p>
+<div class="mt-6 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-bright border-2 border-tertiary overflow-hidden">
+<img alt="headshot of a stylish man with a beard looking excited" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5dk5sKWSljQgWYHg8l_VFPprxmP-bJmP_V0HQaJn7kwKdQLfuD46LYftDI9TmYWIt1PSaGtOJssc1gdFAPlXT-T3b-75kjkYtpCo3_8OWBQ4cid1Vyjm2hmH_-Vm3MEoP1sM6MOLdrLraRumFhQNXejX0CluGI3bXOUAyNwtlGF_BwwtwEg2c6rB8bShKB5xh9xawiXnH64FG4VYv0kgVnaZUIx16br_JTOO3wE8Sdwe5NUsQtklgapnDaZC2L1yEtrFhEIEdHAI"/>
+</div>
+<span class="font-headline text-sm font-bold text-tertiary uppercase tracking-tighter">@TheVowelGuy</span>
+</div>
+</div>
+<div class="absolute -bottom-4 left-10 w-8 h-8 bg-surface border-r-4 border-b-4 border-tertiary rotate-45"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-24 px-6 md:px-20">
+<div class="bg-[#11141b] rounded-none p-12 md:p-20 text-center border-b-[12px] border-black relative overflow-hidden shadow-[12px_12px_0px_0px_#1c2028]">
+<div class="relative z-10 space-y-8">
+<h2 class="text-6xl md:text-8xl font-headline font-black text-white italic drop-shadow-lg uppercase tracking-tighter">READY TO RUMBLE?</h2>
+<p class="text-2xl font-body text-on-surface-variant max-w-2xl mx-auto font-bold">Join 50,000+ players in the most intense word game ever made.</p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
+<button class="w-full sm:w-auto bg-primary text-[#0b0e14] font-headline font-black px-12 py-5 rounded-none text-2xl rotate-1 shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all uppercase">APP STORE</button>
+<button class="w-full sm:w-auto bg-secondary text-[#0b0e14] font-headline font-black px-12 py-5 rounded-none text-2xl -rotate-1 shadow-[4px_4px_0px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all uppercase">GOOGLE PLAY</button>
+</div>
+</div>
+<!-- Abstract Elements -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl -mr-16 -mt-16"></div>
+<div class="absolute bottom-0 left-0 w-48 h-48 bg-secondary/10 rounded-full blur-3xl -ml-24 -mb-24"></div>
+</div>
+</section>
+</main>
+<!-- Footer Shell -->
+<footer class="w-full rounded-0 mt-auto bg-[#000000] dark:bg-[#000000] border-t-8 border-[#1c2028] py-16 px-12 flex flex-col md:flex-row justify-between items-center gap-10">
+<div class="flex flex-col items-center md:items-start gap-2">
+<div class="text-[#ffe96c] font-black tracking-tighter text-3xl font-['Space_Grotesk'] italic">QTIME</div>
+<div class="text-[#45484f] font-['Be_Vietnam_Pro'] text-xs font-bold tracking-widest uppercase">© 2024 QTIME KINETIC GAMING</div>
+</div>
+<div class="flex items-center gap-8 font-['Be_Vietnam_Pro'] text-xs font-bold tracking-widest uppercase">
+<a class="text-[#26fedc] underline decoration-4 underline-offset-4 hover:text-[#ffe96c] transition-colors" href="#">How to Play</a>
+<a class="text-[#45484f] hover:text-[#ffe96c] transition-colors" href="#">Support</a>
+<a class="text-[#45484f] hover:text-[#ffe96c] transition-colors" href="#">Privacy</a>
+</div>
+<div class="flex items-center gap-6">
+<a class="text-[#ff89ab] hover:scale-125 transition-transform" href="#">
+<span class="material-symbols-outlined text-3xl" data-icon="sports_esports">sports_esports</span>
+</a>
+<a class="text-[#ff89ab] hover:scale-125 transition-transform" href="#">
+<span class="material-symbols-outlined text-3xl" data-icon="share">share</span>
+</a>
+</div>
+</footer>
+</body></html>

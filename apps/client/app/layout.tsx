@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
-import {
-  Be_Vietnam_Pro,
-  Plus_Jakarta_Sans,
-  Space_Grotesk,
-} from "next/font/google";
+import { Be_Vietnam_Pro, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const displayFont = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
 });
 
 const bodyFont = Be_Vietnam_Pro({
@@ -17,16 +14,10 @@ const bodyFont = Be_Vietnam_Pro({
   weight: ["400", "500", "600", "700"],
 });
 
-const accentFont = Plus_Jakarta_Sans({
-  variable: "--font-accent",
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
-});
-
 export const metadata: Metadata = {
   title: "QTime",
   description:
-    "QTime is a real-time 1v1 word duel where players race the clock and build winning boards under pressure.",
+    "Competitive word duels built around tile mastery, score pressure, and fast matchmaking.",
 };
 
 export default function RootLayout({
@@ -37,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${displayFont.variable} ${bodyFont.variable} ${accentFont.variable} h-full`}
+      className={`${displayFont.variable} ${bodyFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
