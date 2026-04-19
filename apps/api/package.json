@@ -10,7 +10,7 @@
     "start": "nest start",
     "start:infra": "docker compose -f ../../infra/docker-compose.yml up",
     "start:dev": "npm run db:migrate && nest start --env-file ../../.env --watch",
-    "start:prod": "npm run build && node dist/main",
+    "start:prod": "node dist/main",
     "db:migrate": "dotenv -e ../../.env prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:studio": "prisma studio",
