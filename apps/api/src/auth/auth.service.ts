@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import * as argon2 from 'argon2';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   ACCESS_TOKEN_SECRET,
   ACCESS_TOKEN_TTL_SECONDS,

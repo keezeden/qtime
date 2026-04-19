@@ -60,9 +60,15 @@ export default async function DashboardPage() {
               Queue Flow Soon.
             </h2>
             <p className="mt-3 text-sm leading-7 text-muted">
-              This protected area is wired for the future matchmaking controls,
-              rating snapshots, and match history.
+              Play the local pass-and-play duel now, then bring the result back
+              into matchmaking once the backend contracts land.
             </p>
+            <Link
+              className="pressable-teal font-display mt-5 inline-flex min-h-12 items-center justify-center border-2 border-black bg-accent-teal px-5 text-sm font-bold uppercase text-[#081312]"
+              href="/game"
+            >
+              Play Local Duel
+            </Link>
           </div>
         </div>
 

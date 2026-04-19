@@ -11,6 +11,7 @@ import type {
 
 export const navLinks: NavLink[] = [
   { href: "#home", label: "Home", active: true },
+  { href: "/game", label: "Play" },
   { href: "#flow", label: "Rules" },
   { href: "#matchmaking", label: "Matchmaking" },
   { href: "#snapshot", label: "Score Race" },
@@ -152,7 +153,7 @@ export const scoreRaceEntries: ScoreRaceEntry[] = [
 
 export const ctaButtons: CtaButton[] = [
   {
-    href: "/signup",
+    href: "/game",
     label: "Play Now",
     className:
       "pressable-pink font-display inline-flex min-h-13 items-center justify-center border-2 border-black bg-accent-pink px-8 py-4 text-base font-bold uppercase text-[#140812]",

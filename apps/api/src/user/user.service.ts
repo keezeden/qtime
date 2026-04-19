@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from 'src/generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/prisma/client';
 
 const safeUserSelect = {
   id: true,
