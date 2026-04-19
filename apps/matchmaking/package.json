@@ -4,10 +4,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start:dev": "dotenv -e ../../.env tsx src/matchmaking.ts",
-    "test": "dotenv -e ../../.env jest",
-    "test:watch": "dotenv -e ../../.env jest --watch",
-    "start": "node dist/matchmaking.js",
+    "start:dev": "tsx src/matchmaking.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "start": "tsx src/matchmaking.ts",
     "start:prod": "node dist/matchmaking.js"
   },
   "keywords": [],

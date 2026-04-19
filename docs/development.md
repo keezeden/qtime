@@ -26,12 +26,30 @@ For local host-based development, `POSTGRES_HOST` and `REDIS_HOST` should usuall
 
 For Docker Compose services talking to each other, use service names such as `db` and `redis`.
 
+Create a local environment file from the example:
+
+```bash
+cp .env.example .env
+```
+
+In PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 ## Install
 
 From the repo root:
 
 ```bash
 npm install
+```
+
+For a first-time local setup, start infrastructure, generate Prisma artifacts, and apply deployed migrations:
+
+```bash
+npm run setup:local
 ```
 
 ## Local Infrastructure
@@ -54,22 +72,51 @@ Follow logs:
 npm run infra:logs
 ```
 
+## Recommended Local Workflow
+
+The default local flow is a hybrid setup:
+
+- Docker runs Postgres and Redis.
+- Node runs the API, matchmaking worker, and client from the host.
+- Root scripts load `.env` once and pass that environment into app package scripts.
+
+Run the API, worker, and client together:
+
+```bash
+npm run dev:app
+```
+
+This starts the API on `http://localhost:3000` and the client on `http://localhost:3001`.
+
+Run the API with local infrastructure:
+
+```bash
+npm run dev:api:local
+```
+
+Run only the API and matchmaking worker:
+
+```bash
+npm run dev:backend
+```
+
 ## API Development
 
 Run the NestJS API:
 
 ```bash
-npm --prefix apps/api run start:dev
+npm run dev:api
 ```
 
-The API runs database migrations before starting in watch mode.
+The root API script generates Prisma artifacts, applies deployed migrations, then starts the API in watch mode with the root `.env` loaded.
 
 Useful API commands:
 
 ```bash
-npm --prefix apps/api run db:migrate
-npm --prefix apps/api run db:migrate:dev
-npm --prefix apps/api run db:studio
+npm run api:generate
+npm run api:migrate
+npm run api:migrate:dev
+npm run api:studio
 npm --prefix apps/api run test
 npm --prefix apps/api run lint
 ```
@@ -79,7 +126,7 @@ npm --prefix apps/api run lint
 Run the worker:
 
 ```bash
-npm --prefix apps/matchmaking run start:dev
+npm run dev:matchmaking
 ```
 
 Run worker tests:
@@ -93,8 +140,10 @@ npm --prefix apps/matchmaking run test
 Run the Next.js app:
 
 ```bash
-npm --prefix apps/client run dev
+npm run dev:client
 ```
+
+The client dev server uses `http://localhost:3001` so it can run alongside the API.
 
 ## Docker Stack
 
@@ -140,7 +189,8 @@ npm --prefix apps/matchmaking run test
 
 ## Troubleshooting
 
+- If a root script fails before starting a service, confirm `.env` exists. Copy `.env.example` to `.env` for local development.
 - If the API cannot connect to Postgres, check that `infra` is running and the host/port values match the environment you are using.
 - If Redis queue jobs are not visible to the worker, check that the queue names match across `EventsModule`, `EventsService`, and `apps/matchmaking`.
-- If Prisma cannot resolve its generated client, run the API migration or Prisma generate flow from `apps/api`.
+- If Prisma cannot resolve its generated client, run `npm run api:generate` from the repo root.
 - If Docker services cannot reach each other, use Compose service names (`db`, `redis`) instead of `localhost`.

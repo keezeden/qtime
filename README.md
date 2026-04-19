@@ -36,22 +36,54 @@ Install workspace dependencies:
 npm install
 ```
 
+Create a local environment file:
+
+```bash
+cp .env.example .env
+```
+
+In PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Bootstrap local infrastructure and the API database client/migrations:
+
+```bash
+npm run setup:local
+```
+
 Start Postgres and Redis:
 
 ```bash
 npm run infra:up
 ```
 
-Run the API in development mode:
+Run the API, matchmaking worker, and client locally against Docker-hosted Postgres and Redis:
 
 ```bash
-npm --prefix apps/api run start:dev
+npm run dev:app
+```
+
+The API listens on `http://localhost:3000` and the client dev server listens on `http://localhost:3001`.
+
+Run only the API with local infrastructure:
+
+```bash
+npm run dev:api:local
+```
+
+Run the API in development mode after infrastructure is already running:
+
+```bash
+npm run dev:api
 ```
 
 Run the matchmaking worker:
 
 ```bash
-npm --prefix apps/matchmaking run start:dev
+npm run dev:matchmaking
 ```
 
 Or run the Docker stack:
@@ -81,6 +113,5 @@ QTime is in an early build phase. A few contracts still need alignment as featur
 - The API BullMQ registration and injected queue name should be checked before relying on end-to-end queue delivery.
 - The matchmaking worker currently logs matched pairs; match persistence and queue cleanup are still future work.
 - Rating updates are planned but not implemented yet.
-- Root `dev` scripts reference service names that are still being wired up.
 
 These are documented deliberately so the next implementation steps are visible instead of hidden in code.
