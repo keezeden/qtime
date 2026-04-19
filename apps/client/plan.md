@@ -233,36 +233,36 @@ Resolved from review:
 
 Manual review gate:
 
-- [ ] Stop after completing Phase 3 and wait for manual review before continuing to Phases 4-7
+- [x] Stop after completing Phase 3 and wait for manual review before continuing to Phases 4-7
 
 ### Phase 4. Reusable Page Data And Structure
 
-- [ ] Introduce small typed data arrays for repeated homepage content
-- [ ] Keep repeated UI declarative and easy to edit
-- [ ] Extract small homepage-only components only if `app/page.tsx` becomes hard to scan
-- [ ] Keep any extracted components co-located and tightly scoped to the homepage
+- [x] Introduce small typed data arrays for repeated homepage content
+- [x] Keep repeated UI declarative and easy to edit
+- [x] Extract small homepage-only components only if `app/page.tsx` becomes hard to scan
+- [x] Keep any extracted components co-located and tightly scoped to the homepage
 
 ### Phase 5. Visual Refinement
 
-- [ ] Translate the `designs/` mood into Tailwind v4 classes and current repo conventions
-- [ ] Preserve hard-edged tile geometry and high-contrast arcade energy
-- [ ] Ensure sections are full-width bands or unframed layouts rather than nested-card stacks
-- [ ] Keep component sizing stable so text and score tiles do not shift layout on responsive breakpoints
-- [ ] Check that the palette does not collapse into a one-note or overly muted treatment
+- [x] Translate the `designs/` mood into Tailwind v4 classes and current repo conventions
+- [x] Preserve hard-edged tile geometry and high-contrast arcade energy
+- [x] Ensure sections are full-width bands or unframed layouts rather than nested-card stacks
+- [x] Keep component sizing stable so text and score tiles do not shift layout on responsive breakpoints
+- [x] Check that the palette does not collapse into a one-note or overly muted treatment
 
 ### Phase 6. Assets
 
-- [ ] Decide whether the homepage needs any local static assets beyond code-native shapes and typography
-- [ ] If needed, add local assets under `public/`
-- [ ] Render any added assets with `next/image`
-- [ ] Avoid remote image dependencies and extra `next.config.ts` scope unless a real need appears
+- [x] Decide whether the homepage needs any local static assets beyond code-native shapes and typography
+- [x] If needed, add local assets under `public/`
+- [x] Render any added assets with `next/image`
+- [x] Avoid remote image dependencies and extra `next.config.ts` scope unless a real need appears
 
 ### Phase 7. Validation
 
-- [ ] Run `npm run lint`
-- [ ] Run `npm run build`
-- [ ] Fix any lint, type, or build issues that surface
-- [ ] Confirm the homepage still follows App Router and Metadata API conventions for Next 16
+- [x] Run `npm run lint`
+- [x] Run `npm run build`
+- [x] Fix any lint, type, or build issues that surface
+- [x] Confirm the homepage still follows App Router and Metadata API conventions for Next 16
 
 Execution constraint:
 
