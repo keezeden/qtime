@@ -3,16 +3,19 @@ include:
 
 services:
   api:
-    build: ./apps/api
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
     ports:
       - "3000:3000"
-    env_file: .env
+    env_file: .env.docker
     depends_on:
       - db
+      - redis
   matchmaking:
     build:
       context: .
       dockerfile: ./apps/matchmaking/Dockerfile
-    env_file: .env
+    env_file: .env.docker
     depends_on:
       - redis
