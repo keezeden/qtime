@@ -1,8 +1,9 @@
-import { PlayerQueuedEvent, Region } from "@qtime/types";
+import type { PlayerQueuedEvent, Region } from "@qtime/types";
 import { Queue } from "bullmq";
 import { getTenSecondBlocksSince } from "./utils";
 
 const MATCHMAKING_QUEUE_NAME = process.env.MATCHMAKING_QUEUE_NAME ?? "matchmaking";
+const POLL_INTERVAL_MS = Number(process.env.MATCHMAKING_POLL_INTERVAL_MS ?? 2000);
 
 function createQueue() {
   return new Queue<PlayerQueuedEvent>(MATCHMAKING_QUEUE_NAME, {
@@ -73,9 +74,37 @@ const processQueue = async (queue: Queue<PlayerQueuedEvent>) => {
   console.log("Matches found: ", matches);
 };
 
-if (process.env.NODE_ENV !== "test") {
+const startWorker = () => {
   const queue = createQueue();
-  setInterval(() => {
-    void processQueue(queue);
-  }, 2000);
+  let currentRun: Promise<void> | undefined;
+
+  const poll = () => {
+    if (currentRun) return;
+
+    currentRun = processQueue(queue)
+      .catch((error) => {
+        console.error("Matchmaking poll failed:", error);
+      })
+      .finally(() => {
+        currentRun = undefined;
+      });
+  };
+
+  const interval = setInterval(poll, POLL_INTERVAL_MS);
+  poll();
+
+  const shutdown = async (signal: NodeJS.Signals) => {
+    console.log(`Received ${signal}; shutting down matchmaking worker.`);
+    clearInterval(interval);
+
+    await currentRun;
+    await queue.close();
+  };
+
+  process.once("SIGTERM", () => void shutdown("SIGTERM"));
+  process.once("SIGINT", () => void shutdown("SIGINT"));
+};
+
+if (process.env.NODE_ENV !== "test") {
+  startWorker();
 }

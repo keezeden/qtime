@@ -13,10 +13,12 @@ RUN npm pkg set --prefix packages/types main=index.ts
 # Install dependencies for this service and its local workspace dependency
 RUN npm ci --workspace apps/matchmaking --workspace packages/types
 
-# Copy source for both workspaces used at runtime
+# Copy source for both workspaces used at build time
 COPY apps/matchmaking ./apps/matchmaking
 COPY packages/types ./packages/types
 
 WORKDIR /app/apps/matchmaking
 
-CMD ["npx", "tsx", "src/matchmaking.ts"]
+RUN npm run build
+
+CMD ["node", "dist/matchmaking.js"]
