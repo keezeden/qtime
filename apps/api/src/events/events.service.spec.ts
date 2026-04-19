@@ -1,12 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsService } from './events.service';
+import { getQueueToken } from '@nestjs/bullmq';
+import { MATCHMAKING_QUEUE_NAME } from './events.module';
 
 describe('EventsService', () => {
   let service: EventsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EventsService],
+      providers: [
+        EventsService,
+        {
+          provide: getQueueToken(MATCHMAKING_QUEUE_NAME),
+          useValue: {
+            add: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<EventsService>(EventsService);

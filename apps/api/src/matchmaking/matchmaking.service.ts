@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { PlayerQueuedDto } from "./dto/player-queued.dto";
-import { EventsService } from "src/events/events.service";
+import { EventsService } from "../events/events.service";
 
 @Injectable()
 export class MatchmakingService {

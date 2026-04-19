@@ -4,6 +4,8 @@ import { BullModule } from "@nestjs/bullmq";
 import { BullBoardModule } from "@bull-board/nestjs";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 
+export const MATCHMAKING_QUEUE_NAME = process.env.MATCHMAKING_QUEUE_NAME ?? "matchmaking";
+
 @Module({
   imports: [
     BullModule.forRoot({
@@ -13,10 +15,10 @@ import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
       },
     }),
     BullModule.registerQueue({
-      name: "events",
+      name: MATCHMAKING_QUEUE_NAME,
     }),
     BullBoardModule.forFeature({
-      name: "events",
+      name: MATCHMAKING_QUEUE_NAME,
       adapter: BullMQAdapter,
     }),
   ],

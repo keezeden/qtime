@@ -2,8 +2,10 @@ import { PlayerQueuedEvent, Region } from "@qtime/types";
 import { Queue } from "bullmq";
 import { getTenSecondBlocksSince } from "./utils";
 
+const MATCHMAKING_QUEUE_NAME = process.env.MATCHMAKING_QUEUE_NAME ?? "matchmaking";
+
 function createQueue() {
-  return new Queue<PlayerQueuedEvent>("matchmaking.queued", {
+  return new Queue<PlayerQueuedEvent>(MATCHMAKING_QUEUE_NAME, {
     connection: {
       host: process.env.REDIS_HOST,
       port: Number(process.env.REDIS_PORT),
