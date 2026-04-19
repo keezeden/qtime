@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue, JobsOptions, Job } from "bullmq";
-import { MATCHMAKING_QUEUE_NAME } from "./events.module";
+import { MATCHMAKING_QUEUE_NAME } from "./queue.constants";
 
 @Injectable()
 export class EventsService {

@@ -8,14 +8,19 @@ import { EventsModule } from "./events/events.module";
 import { MatchmakingModule } from "./matchmaking/matchmaking.module";
 import { ExpressAdapter } from "@bull-board/express";
 import { BullBoardModule } from "@bull-board/nestjs";
+import { BULL_BOARD_ENABLED } from "./events/queue.constants";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    BullBoardModule.forRoot({
-      route: "/queues",
-      adapter: ExpressAdapter,
-    }),
+    ...(BULL_BOARD_ENABLED
+      ? [
+          BullBoardModule.forRoot({
+            route: "/queues",
+            adapter: ExpressAdapter,
+          }),
+        ]
+      : []),
     UserModule,
     EventsModule,
     MatchmakingModule,
