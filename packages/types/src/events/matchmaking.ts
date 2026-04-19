@@ -3,7 +3,7 @@ import { Region } from "../user";
 export type PlayerQueuedEvent = {
   jobType: "matchmaking.queued";
   userId: number;
-  startTime: Date;
+  startTime: string;
   region: Region;
   elo: number;
 };
