@@ -28,7 +28,7 @@ export function HeroSection() {
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
           <a
             className="pressable-pink font-display inline-flex min-h-13 items-center justify-center border-2 border-black bg-accent-pink px-8 py-4 text-base font-bold uppercase text-[#0b0e14]"
-            href="#cta"
+            href="/signup"
           >
             Play Now
           </a>
