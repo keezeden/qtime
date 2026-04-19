@@ -21,8 +21,26 @@ model User {
   id               Int               @id @default(autoincrement())
   username         String            @unique
   nametag          String?
+  passwordHash     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   matchParticipants MatchParticipant[]
+  sessions          Session[]
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           Int
+  refreshTokenHash String
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Match {

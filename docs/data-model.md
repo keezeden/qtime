@@ -7,6 +7,7 @@ QTime uses Prisma with PostgreSQL. The schema lives at `apps/api/prisma/schema.p
 ```mermaid
 erDiagram
   User ||--o{ MatchParticipant : participates
+  User ||--o{ Session : owns
   Match ||--o{ MatchParticipant : contains
   MatchParticipant ||--o{ ParticipantStatistics : has
 
@@ -14,6 +15,19 @@ erDiagram
     int id PK
     string username UK
     string nametag
+    string passwordHash
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  Session {
+    string id PK
+    int userId FK
+    string refreshTokenHash
+    datetime expiresAt
+    datetime revokedAt
+    datetime createdAt
+    datetime updatedAt
   }
 
   Match {
@@ -44,10 +58,28 @@ Fields:
 - `id`: auto-incrementing primary key.
 - `username`: unique player name.
 - `nametag`: optional display tag.
+- `passwordHash`: optional Argon2 hash for users created through auth signup.
+- `createdAt`: creation timestamp.
+- `updatedAt`: update timestamp.
 
 Relationships:
 
 - Has many `MatchParticipant` rows.
+- Has many `Session` rows.
+
+## Session
+
+Represents a refresh-token session for auth.
+
+Fields:
+
+- `id`: UUID primary key stored in an HTTP-only cookie.
+- `userId`: owning user id.
+- `refreshTokenHash`: Argon2 hash of the opaque refresh token.
+- `expiresAt`: refresh session expiration.
+- `revokedAt`: set when a session is logged out or invalidated.
+- `createdAt`: creation timestamp.
+- `updatedAt`: update timestamp.
 
 ## Match
 

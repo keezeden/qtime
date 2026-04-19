@@ -9,6 +9,7 @@ import { MatchmakingModule } from "./matchmaking/matchmaking.module";
 import { ExpressAdapter } from "@bull-board/express";
 import { BullBoardModule } from "@bull-board/nestjs";
 import { BULL_BOARD_ENABLED } from "./events/queue.constants";
+import { AuthModule } from "./auth/auth.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { BULL_BOARD_ENABLED } from "./events/queue.constants";
         ]
       : []),
     UserModule,
+    AuthModule,
     EventsModule,
     MatchmakingModule,
   ],

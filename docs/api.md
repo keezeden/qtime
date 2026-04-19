@@ -63,6 +63,97 @@ All fields are optional for updates.
 
 Delete a user by numeric id.
 
+## Auth
+
+Auth uses username/password credentials, HTTP-only cookies, short-lived access tokens, and rotated refresh sessions.
+
+### `POST /auth/signup`
+
+Create a login-capable user and start a session.
+
+Request body:
+
+```json
+{
+  "username": "keez",
+  "password": "password123",
+  "nametag": "OCE"
+}
+```
+
+Successful response:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "username": "keez",
+    "nametag": "OCE"
+  }
+}
+```
+
+Sets HTTP-only `qtime_access`, `qtime_refresh`, and `qtime_session` cookies.
+
+### `POST /auth/login`
+
+Start a session for an existing auth user.
+
+Request body:
+
+```json
+{
+  "username": "keez",
+  "password": "password123"
+}
+```
+
+Successful response matches signup and refreshes the auth cookies.
+
+### `POST /auth/refresh`
+
+Rotate the refresh token and issue a new access token using the existing auth cookies.
+
+Successful response:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "username": "keez",
+    "nametag": "OCE"
+  }
+}
+```
+
+### `POST /auth/logout`
+
+Revoke the current refresh session and clear auth cookies.
+
+Successful response:
+
+```json
+{
+  "ok": true
+}
+```
+
+### `GET /auth/me`
+
+Protected route. Returns the current authenticated user when the access token is valid.
+
+Successful response:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "username": "keez",
+    "nametag": "OCE"
+  }
+}
+```
+
 ## Matchmaking
 
 ### `POST /matchmaking`
