@@ -305,3 +305,94 @@ Successful response:
 ```
 
 Returns `404` when the match does not exist, the authenticated user is not a participant, or the match has no persisted state.
+
+### `GET /matches/:id/events`
+
+Returns accepted game events for a match after an optional version. This is the polling endpoint clients can use while WebSocket updates are not implemented.
+
+Query parameters:
+
+- `afterVersion`: optional integer. Defaults to `0`.
+
+Example:
+
+```text
+GET /matches/1/events?afterVersion=3
+```
+
+Successful response:
+
+```json
+{
+  "events": [
+    {
+      "id": 10,
+      "matchId": 1,
+      "version": 4,
+      "userId": 1,
+      "type": "word_submitted",
+      "payload": {
+        "word": "crane"
+      },
+      "createdAt": "2026-04-20T00:00:03.000Z"
+    }
+  ]
+}
+```
+
+### `POST /matches/:id/events`
+
+Accepts a client-authoritative game event and advances the persisted game state when the submitted base version matches the current state version.
+
+Request body:
+
+```json
+{
+  "baseVersion": 0,
+  "type": "word_submitted",
+  "payload": {
+    "word": "crane"
+  },
+  "stateStatus": "active",
+  "nextState": {
+    "phase": "submitted",
+    "scores": {
+      "1": 42,
+      "2": 0
+    }
+  }
+}
+```
+
+Successful response:
+
+```json
+{
+  "event": {
+    "id": 10,
+    "matchId": 1,
+    "version": 1,
+    "userId": 1,
+    "type": "word_submitted",
+    "payload": {
+      "word": "crane"
+    },
+    "createdAt": "2026-04-20T00:00:03.000Z"
+  },
+  "state": {
+    "matchId": 1,
+    "version": 1,
+    "status": "active",
+    "state": {
+      "phase": "submitted",
+      "scores": {
+        "1": 42,
+        "2": 0
+      }
+    },
+    "updatedAt": "2026-04-20T00:00:03.000Z"
+  }
+}
+```
+
+Returns `409` when `baseVersion` does not match the current `GameState.version`.

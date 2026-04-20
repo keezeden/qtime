@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { MatchStatus } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CurrentMatchResponse, MatchResponse, MatchStateResponse } from './types/match-response';
+import type { CreateGameEventDto } from './dto/create-game-event.dto';
+import type { ListGameEventsDto } from './dto/list-game-events.dto';
+import type {
+  CurrentMatchResponse,
+  GameEventAcceptedResponse,
+  GameEventsResponse,
+  MatchResponse,
+  MatchStateResponse,
+} from './types/match-response';
 
 const participantSelect = {
   userId: true,
@@ -34,8 +42,19 @@ const gameStateSelect = {
   updatedAt: true,
 } as const;
 
+const gameEventSelect = {
+  id: true,
+  matchId: true,
+  version: true,
+  userId: true,
+  type: true,
+  payload: true,
+  createdAt: true,
+} as const;
+
 type MatchRecord = Prisma.MatchGetPayload<{ select: typeof matchSelect }>;
 type GameStateRecord = Prisma.GameStateGetPayload<{ select: typeof gameStateSelect }>;
+type GameEventRecord = Prisma.GameEventGetPayload<{ select: typeof gameEventSelect }>;
 
 @Injectable()
 export class MatchesService {
@@ -89,6 +108,79 @@ export class MatchesService {
     return { state: this.serializeGameState(gameState) };
   }
 
+  async findEvents(
+    matchId: number,
+    userId: number,
+    query: ListGameEventsDto,
+  ): Promise<GameEventsResponse> {
+    await this.ensureParticipant(matchId, userId);
+
+    const events = await this.prisma.gameEvent.findMany({
+      where: {
+        matchId,
+        version: {
+          gt: query.afterVersion ?? 0,
+        },
+      },
+      orderBy: { version: 'asc' },
+      select: gameEventSelect,
+    });
+
+    return { events: events.map((event) => this.serializeGameEvent(event)) };
+  }
+
+  async createEvent(
+    matchId: number,
+    userId: number,
+    input: CreateGameEventDto,
+  ): Promise<GameEventAcceptedResponse> {
+    const result = await this.prisma.$transaction(async (transaction) => {
+      await this.ensureActiveParticipant(transaction, matchId, userId);
+
+      const gameState = await transaction.gameState.findUnique({
+        where: { matchId },
+        select: gameStateSelect,
+      });
+
+      if (!gameState) {
+        throw new NotFoundException('Game state was not found for the match.');
+      }
+
+      if (gameState.version !== input.baseVersion) {
+        throw new ConflictException('Game state version does not match the submitted baseVersion.');
+      }
+
+      const nextVersion = input.baseVersion + 1;
+      const event = await transaction.gameEvent.create({
+        data: {
+          matchId,
+          version: nextVersion,
+          userId,
+          type: input.type,
+          payload: input.payload,
+        },
+        select: gameEventSelect,
+      });
+
+      const updatedState = await transaction.gameState.update({
+        where: { matchId },
+        data: {
+          version: nextVersion,
+          status: input.stateStatus,
+          state: input.nextState,
+        },
+        select: gameStateSelect,
+      });
+
+      return { event, state: updatedState };
+    });
+
+    return {
+      event: this.serializeGameEvent(result.event),
+      state: this.serializeGameState(result.state),
+    };
+  }
+
   private async ensureParticipant(matchId: number, userId: number): Promise<void> {
     const match = await this.prisma.match.findFirst({
       where: {
@@ -105,6 +197,27 @@ export class MatchesService {
     }
   }
 
+  private async ensureActiveParticipant(
+    transaction: Prisma.TransactionClient,
+    matchId: number,
+    userId: number,
+  ): Promise<void> {
+    const match = await transaction.match.findFirst({
+      where: {
+        id: matchId,
+        status: MatchStatus.ACTIVE,
+        matchParticipants: {
+          some: { userId },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!match) {
+      throw new NotFoundException('Active match was not found for the authenticated user.');
+    }
+  }
+
   private serializeMatch(match: MatchRecord): MatchResponse['match'] {
     return {
       ...match,
@@ -118,6 +231,13 @@ export class MatchesService {
     return {
       ...gameState,
       updatedAt: gameState.updatedAt.toISOString(),
+    };
+  }
+
+  private serializeGameEvent(event: GameEventRecord): GameEventsResponse['events'][number] {
+    return {
+      ...event,
+      createdAt: event.createdAt.toISOString(),
     };
   }
 }

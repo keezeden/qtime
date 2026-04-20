@@ -15,9 +15,6 @@ This roadmap follows the overview while staying grounded in the current repo.
 
 ## Phase 3: Multiplayer Game State
 
-- Add authenticated game event submission.
-- Use optimistic `GameState.version` checks to reject stale client updates.
-- Persist accepted client events in `GameEvent`.
 - Broadcast accepted updates to match participants.
 
 ## Phase 4: Match Results and Ratings

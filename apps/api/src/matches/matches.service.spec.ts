@@ -5,11 +5,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MatchesService } from './matches.service';
 
 type PrismaMock = {
+  $transaction: jest.Mock;
   match: {
     findFirst: jest.Mock;
   };
   gameState: {
     findUnique: jest.Mock;
+    update: jest.Mock;
+  };
+  gameEvent: {
+    findMany: jest.Mock;
+    create: jest.Mock;
   };
 };
 
@@ -45,13 +51,20 @@ describe('MatchesService', () => {
 
   beforeEach(async () => {
     prisma = {
+      $transaction: jest.fn(),
       match: {
         findFirst: jest.fn(),
       },
       gameState: {
         findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      gameEvent: {
+        findMany: jest.fn(),
+        create: jest.fn(),
       },
     };
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -141,5 +154,139 @@ describe('MatchesService', () => {
       where: { matchId: 1 },
       select: expect.any(Object),
     });
+  });
+
+  it('returns events after the requested version for a participant', async () => {
+    prisma.match.findFirst.mockResolvedValue({ id: 1 });
+    prisma.gameEvent.findMany.mockResolvedValue([
+      {
+        id: 10,
+        matchId: 1,
+        version: 2,
+        userId: 1,
+        type: 'word_submitted',
+        payload: { word: 'crane' },
+        createdAt: new Date('2026-01-01T00:00:03.000Z'),
+      },
+    ]);
+
+    await expect(service.findEvents(1, 1, { afterVersion: 1 })).resolves.toEqual({
+      events: [
+        {
+          id: 10,
+          matchId: 1,
+          version: 2,
+          userId: 1,
+          type: 'word_submitted',
+          payload: { word: 'crane' },
+          createdAt: '2026-01-01T00:00:03.000Z',
+        },
+      ],
+    });
+    expect(prisma.gameEvent.findMany).toHaveBeenCalledWith({
+      where: {
+        matchId: 1,
+        version: { gt: 1 },
+      },
+      orderBy: { version: 'asc' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('creates an event and advances game state in one transaction', async () => {
+    prisma.match.findFirst.mockResolvedValue({ id: 1 });
+    prisma.gameState.findUnique.mockResolvedValue({
+      matchId: 1,
+      version: 0,
+      status: 'active',
+      state: { phase: 'ready' },
+      updatedAt: new Date('2026-01-01T00:00:02.000Z'),
+    });
+    prisma.gameEvent.create.mockResolvedValue({
+      id: 10,
+      matchId: 1,
+      version: 1,
+      userId: 1,
+      type: 'word_submitted',
+      payload: { word: 'crane' },
+      createdAt: new Date('2026-01-01T00:00:03.000Z'),
+    });
+    prisma.gameState.update.mockResolvedValue({
+      matchId: 1,
+      version: 1,
+      status: 'active',
+      state: { phase: 'submitted' },
+      updatedAt: new Date('2026-01-01T00:00:03.000Z'),
+    });
+
+    await expect(
+      service.createEvent(1, 1, {
+        baseVersion: 0,
+        type: 'word_submitted',
+        payload: { word: 'crane' },
+        stateStatus: 'active',
+        nextState: { phase: 'submitted' },
+      }),
+    ).resolves.toEqual({
+      event: {
+        id: 10,
+        matchId: 1,
+        version: 1,
+        userId: 1,
+        type: 'word_submitted',
+        payload: { word: 'crane' },
+        createdAt: '2026-01-01T00:00:03.000Z',
+      },
+      state: {
+        matchId: 1,
+        version: 1,
+        status: 'active',
+        state: { phase: 'submitted' },
+        updatedAt: '2026-01-01T00:00:03.000Z',
+      },
+    });
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(prisma.gameEvent.create).toHaveBeenCalledWith({
+      data: {
+        matchId: 1,
+        version: 1,
+        userId: 1,
+        type: 'word_submitted',
+        payload: { word: 'crane' },
+      },
+      select: expect.any(Object),
+    });
+    expect(prisma.gameState.update).toHaveBeenCalledWith({
+      where: { matchId: 1 },
+      data: {
+        version: 1,
+        status: 'active',
+        state: { phase: 'submitted' },
+      },
+      select: expect.any(Object),
+    });
+  });
+
+  it('rejects stale event submissions', async () => {
+    prisma.match.findFirst.mockResolvedValue({ id: 1 });
+    prisma.gameState.findUnique.mockResolvedValue({
+      matchId: 1,
+      version: 2,
+      status: 'active',
+      state: { phase: 'ready' },
+      updatedAt: new Date('2026-01-01T00:00:02.000Z'),
+    });
+
+    await expect(
+      service.createEvent(1, 1, {
+        baseVersion: 1,
+        type: 'word_submitted',
+        payload: { word: 'crane' },
+        stateStatus: 'active',
+        nextState: { phase: 'submitted' },
+      }),
+    ).rejects.toThrow('Game state version does not match the submitted baseVersion.');
+    expect(prisma.gameEvent.create).not.toHaveBeenCalled();
+    expect(prisma.gameState.update).not.toHaveBeenCalled();
   });
 });

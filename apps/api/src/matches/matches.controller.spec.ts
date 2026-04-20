@@ -16,6 +16,8 @@ describe('MatchesController', () => {
             findCurrent: jest.fn(),
             findOne: jest.fn(),
             findState: jest.fn(),
+            findEvents: jest.fn(),
+            createEvent: jest.fn(),
           },
         },
       ],

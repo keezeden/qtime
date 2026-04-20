@@ -28,6 +28,16 @@ export type GameStateResponse = {
   updatedAt: string;
 };
 
+export type GameEventResponse = {
+  id: number;
+  matchId: number;
+  version: number;
+  userId: number;
+  type: string;
+  payload: Prisma.JsonValue;
+  createdAt: string;
+};
+
 export type CurrentMatchResponse = {
   match: MatchSummaryResponse | null;
 };
@@ -38,4 +48,13 @@ export type MatchResponse = {
 
 export type MatchStateResponse = {
   state: GameStateResponse;
+};
+
+export type GameEventAcceptedResponse = {
+  event: GameEventResponse;
+  state: GameStateResponse;
+};
+
+export type GameEventsResponse = {
+  events: GameEventResponse[];
 };

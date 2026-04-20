@@ -57,17 +57,17 @@ export default async function DashboardPage() {
               Next Action
             </p>
             <h2 className="font-display mt-3 text-3xl font-bold uppercase italic text-foreground">
-              Queue Flow Soon.
+              Queue for Duel.
             </h2>
             <p className="mt-3 text-sm leading-7 text-muted">
-              Play the local pass-and-play duel now, then bring the result back
-              into matchmaking once the backend contracts land.
+              Enter matchmaking, wait for a paired opponent, then play through
+              the persisted multiplayer state loop.
             </p>
             <Link
               className="pressable-teal font-display mt-5 inline-flex min-h-12 items-center justify-center border-2 border-black bg-accent-teal px-5 text-sm font-bold uppercase text-[#081312]"
               href="/game"
             >
-              Play Local Duel
+              Queue Multiplayer
             </Link>
           </div>
         </div>
