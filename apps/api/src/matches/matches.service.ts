@@ -1,9 +1,10 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { MatchStatus } from '../generated/prisma/enums';
+import { MatchResult, MatchStatus } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateGameEventDto } from './dto/create-game-event.dto';
 import type { ListGameEventsDto } from './dto/list-game-events.dto';
+import { GAME_EVENT_TYPES, type GameEventType } from './game-event-types';
 import type {
   CurrentMatchResponse,
   GameEventAcceptedResponse,
@@ -108,11 +109,7 @@ export class MatchesService {
     return { state: this.serializeGameState(gameState) };
   }
 
-  async findEvents(
-    matchId: number,
-    userId: number,
-    query: ListGameEventsDto,
-  ): Promise<GameEventsResponse> {
+  async findEvents(matchId: number, userId: number, query: ListGameEventsDto): Promise<GameEventsResponse> {
     await this.ensureParticipant(matchId, userId);
 
     const events = await this.prisma.gameEvent.findMany({
@@ -129,11 +126,7 @@ export class MatchesService {
     return { events: events.map((event) => this.serializeGameEvent(event)) };
   }
 
-  async createEvent(
-    matchId: number,
-    userId: number,
-    input: CreateGameEventDto,
-  ): Promise<GameEventAcceptedResponse> {
+  async createEvent(matchId: number, userId: number, input: CreateGameEventDto): Promise<GameEventAcceptedResponse> {
     const result = await this.prisma.$transaction(async (transaction) => {
       await this.ensureActiveParticipant(transaction, matchId, userId);
 
@@ -152,13 +145,7 @@ export class MatchesService {
 
       const nextVersion = input.baseVersion + 1;
       const event = await transaction.gameEvent.create({
-        data: {
-          matchId,
-          version: nextVersion,
-          userId,
-          type: input.type,
-          payload: input.payload,
-        },
+        data: { matchId, version: nextVersion, userId, type: input.type, payload: input.payload },
         select: gameEventSelect,
       });
 
@@ -171,6 +158,10 @@ export class MatchesService {
         },
         select: gameStateSelect,
       });
+
+      if (input.type === 'match_finished') {
+        await this.finishMatch(transaction, matchId, input.nextState);
+      }
 
       return { event, state: updatedState };
     });
@@ -218,6 +209,54 @@ export class MatchesService {
     }
   }
 
+  private async finishMatch(
+    transaction: Prisma.TransactionClient,
+    matchId: number,
+    nextState: Prisma.InputJsonObject,
+  ): Promise<void> {
+    const winnerUserId = this.readWinnerUserId(nextState);
+    const participants = await transaction.matchParticipant.findMany({
+      where: { matchId },
+      select: { userId: true },
+    });
+
+    if (!winnerUserId || !participants.some((participant) => participant.userId === winnerUserId)) {
+      throw new ConflictException('match_finished events must include a participant winnerUserId.');
+    }
+
+    await transaction.match.update({
+      where: { id: matchId },
+      data: {
+        status: MatchStatus.FINISHED,
+        finishedAt: new Date(),
+      },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      participants.map((participant) =>
+        transaction.matchParticipant.update({
+          where: {
+            matchId_userId: {
+              matchId,
+              userId: participant.userId,
+            },
+          },
+          data: {
+            result: participant.userId === winnerUserId ? MatchResult.WIN : MatchResult.LOSS,
+          },
+          select: { matchId: true, userId: true },
+        }),
+      ),
+    );
+  }
+
+  private readWinnerUserId(nextState: Prisma.InputJsonObject): number | null {
+    const winnerUserId = nextState.winnerUserId;
+
+    return typeof winnerUserId === 'number' && Number.isInteger(winnerUserId) ? winnerUserId : null;
+  }
+
   private serializeMatch(match: MatchRecord): MatchResponse['match'] {
     return {
       ...match,
@@ -237,7 +276,16 @@ export class MatchesService {
   private serializeGameEvent(event: GameEventRecord): GameEventsResponse['events'][number] {
     return {
       ...event,
+      type: this.toGameEventType(event.type),
       createdAt: event.createdAt.toISOString(),
     };
+  }
+
+  private toGameEventType(type: string): GameEventType {
+    if (GAME_EVENT_TYPES.includes(type as GameEventType)) {
+      return type as GameEventType;
+    }
+
+    throw new Error(`Persisted game event has unsupported type: ${type}`);
   }
 }

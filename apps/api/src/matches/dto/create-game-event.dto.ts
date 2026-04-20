@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsObject, IsString, Min, MinLength } from 'class-validator';
+import { IsIn, IsInt, IsObject, IsString, Min, MinLength } from 'class-validator';
 import type { Prisma } from '../../generated/prisma/client';
+import { GAME_EVENT_TYPES, type GameEventType } from '../game-event-types';
 
 export class CreateGameEventDto {
   @Type(() => Number)
@@ -8,9 +9,8 @@ export class CreateGameEventDto {
   @Min(0)
   baseVersion: number;
 
-  @IsString()
-  @MinLength(1)
-  type: string;
+  @IsIn(GAME_EVENT_TYPES)
+  type: GameEventType;
 
   @IsObject()
   payload: Prisma.InputJsonObject;

@@ -13,12 +13,13 @@ import {
   joinMatchmaking,
   readEventState,
   submitGameState,
+  type GameEventType,
   type MatchSummary,
 } from "./multiplayer-api";
 import type { GameState, Tile } from "./word-game";
 import { refreshRack, scoreWord, submitWord } from "./word-game";
 import { shuffleTiles } from "./word-game-tiles";
-import { createNamedGame, getLocalPlayerId } from "./multiplayer-state";
+import { createNamedGame, createWordEventSubmission, getLocalPlayerId } from "./multiplayer-state";
 
 type Props = {
   user: AuthUser;
@@ -110,7 +111,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     }
 
     if (getLocalPlayerId(currentMatch, user.id) === "player-one" && envelope.version === 0) {
-      await publishState(currentMatch.id, 0, "game_initialized", createNamedGame(currentMatch));
+      await publishState(currentMatch.id, 0, "game_initialized", {}, createNamedGame(currentMatch));
     } else {
       setMessage("Waiting for opponent to initialize the game.");
     }
@@ -154,10 +155,11 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   async function publishState(
     matchId: number,
     baseVersion: number,
-    type: string,
+    type: GameEventType,
+    payload: Record<string, unknown>,
     nextState: GameState,
   ): Promise<void> {
-    const envelope = await submitGameState(matchId, baseVersion, type, nextState);
+    const envelope = await submitGameState(matchId, baseVersion, type, payload, nextState);
     setVersion(envelope.version);
 
     if (isGameState(envelope.state)) {
@@ -175,14 +177,16 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
       return;
     }
 
-    await publishState(match.id, version, "word_submitted", result.state);
+    const event = createWordEventSubmission(match, result.state);
+
+    await publishState(match.id, version, event.type, event.payload, result.state);
     clearSelectedTiles();
   }
 
   async function handleRefreshRack(): Promise<void> {
     if (!game || !match || !isLocalTurn) return;
 
-    await publishState(match.id, version, "rack_refreshed", refreshRack(game));
+    await publishState(match.id, version, "rack_refreshed", {}, refreshRack(game));
     clearSelectedTiles();
   }
 
@@ -199,7 +203,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
         },
       },
     };
-    await publishState(match.id, version, "rack_shuffled", nextGame);
+    await publishState(match.id, version, "rack_shuffled", {}, nextGame);
     clearSelectedTiles();
   }
 

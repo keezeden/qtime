@@ -1,5 +1,12 @@
 import type { GameState } from "./word-game";
 
+export type GameEventType =
+  | "game_initialized"
+  | "word_submitted"
+  | "rack_refreshed"
+  | "rack_shuffled"
+  | "match_finished";
+
 export type MatchParticipant = {
   userId: number;
   seat: number;
@@ -29,7 +36,7 @@ export type GameEvent = {
   matchId: number;
   version: number;
   userId: number;
-  type: string;
+  type: GameEventType;
   payload: unknown;
   createdAt: string;
 };
@@ -86,7 +93,8 @@ export async function fetchGameEvents(
 export async function submitGameState(
   matchId: number,
   baseVersion: number,
-  type: string,
+  type: GameEventType,
+  payload: Record<string, unknown>,
   nextState: GameState,
 ): Promise<GameStateEnvelope> {
   const body = await apiFetch<GameEventAcceptedResponse>(
@@ -96,9 +104,12 @@ export async function submitGameState(
       body: JSON.stringify({
         baseVersion,
         type,
-        payload: { nextState },
+        payload: { ...payload, nextState },
         stateStatus: nextState.status === "finished" ? "finished" : "active",
-        nextState,
+        nextState: {
+          ...nextState,
+          winnerUserId: payload.winnerUserId,
+        },
       }),
     },
   );

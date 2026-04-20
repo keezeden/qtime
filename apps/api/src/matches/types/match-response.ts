@@ -1,5 +1,6 @@
 import type { MatchResult, MatchStatus } from '../../generated/prisma/enums';
 import type { Prisma } from '../../generated/prisma/client';
+import type { GameEventType } from '../game-event-types';
 
 export type MatchParticipantResponse = {
   userId: number;
@@ -33,7 +34,7 @@ export type GameEventResponse = {
   matchId: number;
   version: number;
   userId: number;
-  type: string;
+  type: GameEventType;
   payload: Prisma.JsonValue;
   createdAt: string;
 };
