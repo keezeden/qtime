@@ -128,7 +128,7 @@ export function WordDuel() {
     setMessage(
       result.state.status === "finished"
         ? `${playedWord.playerName} wins with ${playedWord.word}.`
-        : `${playedWord.playerName} scored ${playedWord.totalScore} with ${playedWord.word}.`,
+        : "",
     );
   }, [clearSelectedTiles, game, wordEntry]);
 
@@ -177,6 +177,20 @@ export function WordDuel() {
     setMessage(`${playerName} refreshed their rack and passed the turn.`);
   }
 
+  function handleShuffleRack() {
+    setGame((currentGame) => ({
+      ...currentGame,
+      players: {
+        ...currentGame.players,
+        [currentGame.currentPlayerId]: {
+          ...currentGame.players[currentGame.currentPlayerId],
+          rack: shuffleTiles(currentGame.players[currentGame.currentPlayerId].rack),
+        },
+      },
+    }));
+    clearSelectedTiles();
+  }
+
   function handleNewMatch(nextTargetScore = targetScore) {
     setTargetScore(nextTargetScore);
     setGame(createGame(nextTargetScore));
@@ -214,11 +228,10 @@ export function WordDuel() {
 
       <section className="grid w-full flex-1 grid-rows-[auto_1fr_auto] gap-5 py-5">
         <div className="grid gap-3 lg:grid-cols-[minmax(150px,12vw)_1fr_minmax(150px,12vw)] lg:items-start">
-          <PlayerCard
+          <PlayerColumn
             align="left"
             isActive={game.currentPlayerId === "player-one"}
             playerId="player-one"
-            scoreTarget={game.targetScore}
             state={game}
           />
 
@@ -234,30 +247,15 @@ export function WordDuel() {
               <ScoreChip label="Turn" value={previewScore.totalScore} />
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                className="pressable-pink font-display min-h-13 border-2 border-black bg-accent-pink px-4 text-sm font-bold uppercase text-[#140812] disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={game.status === "finished"}
-                type="submit"
-              >
-                Submit
-              </button>
-              <button
-                className="font-display min-h-13 border-2 border-border bg-surface px-4 text-sm font-bold uppercase text-foreground disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={game.status === "finished"}
-                onClick={handleRefreshRack}
-                type="button"
-              >
-                Refresh
-              </button>
-            </div>
+            <button className="sr-only" type="submit">
+              Submit
+            </button>
           </form>
 
-          <PlayerCard
+          <PlayerColumn
             align="right"
             isActive={game.currentPlayerId === "player-two"}
             playerId="player-two"
-            scoreTarget={game.targetScore}
             state={game}
           />
         </div>
@@ -272,6 +270,9 @@ export function WordDuel() {
 
         <section className="mx-auto grid w-full max-w-7xl gap-4">
           <RackPanel
+            onRefresh={handleRefreshRack}
+            onShuffle={handleShuffleRack}
+            onSubmit={commitWord}
             onTileClick={addTileToWord}
             selectedTileIds={selectedTileIds}
             player={currentPlayer}
@@ -334,21 +335,51 @@ function WordSlots({ tiles }: { tiles: Tile[] }) {
   );
 }
 
-function PlayerCard({
+function PlayerColumn({
   align,
   isActive,
   playerId,
-  scoreTarget,
   state,
 }: {
   align: "left" | "right";
   isActive: boolean;
   playerId: PlayerId;
-  scoreTarget: number;
   state: GameState;
 }) {
   const player = state.players[playerId];
-  const progress = Math.min(100, Math.round((player.score / scoreTarget) * 100));
+  const playerWords = state.playedWords.filter(
+    (playedWord) => playedWord.playerId === playerId,
+  );
+
+  return (
+    <aside className="flex flex-col gap-3">
+      <PlayerCard
+        align={align}
+        isActive={isActive}
+        playerId={playerId}
+        state={state}
+      />
+      <WordHistory
+        align={align}
+        playerName={player.name}
+        playedWords={playerWords}
+      />
+    </aside>
+  );
+}
+
+function PlayerCard({
+  align,
+  isActive,
+  playerId,
+  state,
+}: {
+  align: "left" | "right";
+  isActive: boolean;
+  playerId: PlayerId;
+  state: GameState;
+}) {
+  const player = state.players[playerId];
 
   return (
     <section
@@ -358,11 +389,8 @@ function PlayerCard({
           : "border-border bg-surface-strong"
       } ${align === "right" ? "lg:text-right" : ""}`}
     >
-      <p className="font-display text-xs font-bold uppercase tracking-[0.18em] text-muted">
-        {isActive ? "On Turn" : "Waiting"}
-      </p>
       <div
-        className={`mt-2 flex items-end justify-between gap-4 ${
+        className={`flex items-end justify-between gap-4 ${
           align === "right" ? "lg:flex-row-reverse" : ""
         }`}
       >
@@ -377,27 +405,67 @@ function PlayerCard({
           {player.score}
         </p>
       </div>
-      <div className="mt-4 h-3 border-2 border-border bg-background">
-        <div
-          className={`h-full ${
-            playerId === "player-one" ? "bg-accent-pink" : "bg-accent-teal"
-          }`}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-muted">
-        {progress}% to {scoreTarget}
+    </section>
+  );
+}
+
+function WordHistory({
+  align,
+  playerName,
+  playedWords,
+}: {
+  align: "left" | "right";
+  playerName: string;
+  playedWords: GameState["playedWords"];
+}) {
+  return (
+    <section
+      className={`border-2 border-border bg-surface-strong/70 p-3 ${
+        align === "right" ? "lg:text-right" : ""
+      }`}
+    >
+      <p className="font-display text-xs font-bold uppercase tracking-[0.16em] text-muted">
+        Words
       </p>
+      <div className="mt-3 grid gap-2">
+        {playedWords.length ? (
+          playedWords.slice(0, 8).map((play) => (
+            <div
+              className={`flex items-center justify-between gap-3 border-2 border-border bg-background px-3 py-2 ${
+                align === "right" ? "lg:flex-row-reverse" : ""
+              }`}
+              key={play.id}
+            >
+              <span className="font-display text-sm font-bold uppercase text-foreground">
+                {play.word}
+              </span>
+              <span className="font-display text-sm font-bold text-accent-teal">
+                +{play.totalScore}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p className="border-2 border-border bg-background px-3 py-3 text-xs font-semibold text-muted">
+            {playerName} has no words yet.
+          </p>
+        )}
+      </div>
     </section>
   );
 }
 
 function RackPanel({
+  onRefresh,
+  onShuffle,
+  onSubmit,
   onTileClick,
   player,
   selectedTileIds,
   status,
 }: {
+  onRefresh: () => void;
+  onShuffle: () => void;
+  onSubmit: () => void;
   onTileClick: (tile: Tile) => void;
   player: { name: string; rack: Tile[] };
   selectedTileIds: Set<string>;
@@ -410,15 +478,37 @@ function RackPanel({
       <p className="text-center font-display text-xs font-bold uppercase tracking-[0.18em] text-muted">
         {player.name}
       </p>
-      <div className="mx-auto mt-3 grid max-w-[34rem] grid-cols-5 gap-2 sm:gap-3">
-        {visibleRack.map((tile) => (
-          <TileButton
+      <div className="mx-auto mt-3 grid max-w-[39rem] grid-cols-6 gap-2 sm:gap-3">
+        <div className="col-span-5 grid grid-cols-5 gap-2 sm:gap-3">
+          {visibleRack.map((tile) => (
+            <TileButton
+              disabled={status === "finished"}
+              key={tile.id}
+              onClick={() => onTileClick(tile)}
+              tile={tile}
+            />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 content-start gap-2 sm:gap-3">
+          <CommandTile
             disabled={status === "finished"}
-            key={tile.id}
-            onClick={() => onTileClick(tile)}
-            tile={tile}
+            label="Refresh"
+            onClick={onRefresh}
+            tone="yellow"
           />
-        ))}
+          <CommandTile
+            disabled={status === "finished"}
+            label="Shuffle"
+            onClick={onShuffle}
+            tone="green"
+          />
+          <CommandTile
+            disabled={status === "finished"}
+            label="Submit"
+            onClick={onSubmit}
+            tone="pink"
+          />
+        </div>
       </div>
     </section>
   );
@@ -435,7 +525,7 @@ function TileButton({
 }) {
   return (
     <button
-      className="tile-shadow-teal font-display flex aspect-square min-h-13 items-center justify-center border-2 border-accent-teal bg-accent-teal/10 text-3xl font-bold text-accent-teal transition disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-18 sm:text-4xl"
+      className="tile-shadow-teal font-display flex aspect-square min-h-11 items-center justify-center border-2 border-accent-teal bg-accent-teal/10 text-2xl font-bold text-accent-teal transition disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-16 sm:text-4xl"
       disabled={disabled}
       onClick={onClick}
       title={`${tile.letter}, worth ${tile.value}`}
@@ -458,6 +548,52 @@ function ScoreChip({ label, value }: { label: string; value: number | string }) 
       <span className="font-bold uppercase tracking-[0.12em]">{label}</span>
     </p>
   );
+}
+
+function CommandTile({
+  disabled,
+  label,
+  onClick,
+  tone,
+}: {
+  disabled: boolean;
+  label: string;
+  onClick: () => void;
+  tone: "pink" | "yellow" | "green";
+}) {
+  const toneClassNames = {
+    pink:
+      "border-accent-pink bg-accent-pink/20 text-accent-pink shadow-[6px_6px_0_var(--shadow-pink)]",
+    yellow:
+      "border-accent-yellow bg-accent-yellow/20 text-accent-yellow shadow-[6px_6px_0_#7b6a00]",
+    green:
+      "border-accent-green bg-accent-green/20 text-accent-green shadow-[6px_6px_0_#1f7a30]",
+  };
+
+  return (
+    <button
+      className={`font-display flex aspect-square min-h-11 items-center justify-center border-2 px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-[0.06em] transition disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-16 sm:text-[10px] ${toneClassNames[tone]}`}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
+  );
+}
+
+function shuffleTiles(tiles: Tile[]) {
+  const shuffled = [...tiles];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index],
+    ];
+  }
+
+  return shuffled;
 }
 
 function RulesModal({
