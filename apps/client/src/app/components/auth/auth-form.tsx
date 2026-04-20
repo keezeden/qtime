@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { sanitizeNextPath } from "@/app/lib/navigation";
 
 type AuthFormProps = {
   mode: "login" | "signup";
-  nextPath?: string;
+  nextPath: string;
 };
 
-export function AuthForm({ mode, nextPath = "/dashboard" }: AuthFormProps) {
+export function AuthForm({ mode, nextPath }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,12 +139,4 @@ export function AuthForm({ mode, nextPath = "/dashboard" }: AuthFormProps) {
       </p>
     </form>
   );
-}
-
-function sanitizeNextPath(nextPath: string): string {
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return nextPath;
 }

@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  DEFAULT_AUTH_NEXT_PATH,
+  sanitizeNextPath,
+} from "@/app/lib/navigation";
 
 const API_URL = process.env.QTIME_API_URL ?? "http://localhost:3000";
 const AUTH_ACTIONS = new Set(["signup", "login", "refresh", "logout", "me"]);
@@ -15,7 +19,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
   if (action === "refresh") {
     const response = await forwardAuthRequest(request, action, "POST");
     const nextPath = sanitizeNextPath(
-      request.nextUrl.searchParams.get("next") ?? "/dashboard",
+      request.nextUrl.searchParams.get("next") ?? DEFAULT_AUTH_NEXT_PATH,
     );
 
     if (response.ok) {
@@ -107,12 +111,4 @@ function redirectWithCookies(
   }
 
   return response;
-}
-
-function sanitizeNextPath(nextPath: string): string {
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return nextPath;
 }

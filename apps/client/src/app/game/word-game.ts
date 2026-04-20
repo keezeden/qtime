@@ -1,139 +1,37 @@
-export const RACK_SIZE = 15;
-export const DEFAULT_TARGET_SCORE = 500;
-export const MIN_WORD_LENGTH = 2;
+import {
+  MIN_WORD_LENGTH,
+  RACK_SIZE,
+  type GameState,
+  type MatchEvent,
+  type PlayerId,
+  type SubmitWordResult,
+  type Tile,
+  type WordScore,
+} from "./word-game-types";
+import {
+  createId,
+  createTileBag,
+  drawTiles,
+  removeWordTiles,
+  shuffleTiles,
+  tileValues,
+} from "./word-game-tiles";
 
-export type PlayerId = "player-one" | "player-two";
+export {
+  DEFAULT_TARGET_SCORE,
+  MIN_WORD_LENGTH,
+  RACK_SIZE,
+  type GameState,
+  type MatchEvent,
+  type PlayedWord,
+  type PlayerId,
+  type PlayerState,
+  type SubmitWordResult,
+  type Tile,
+  type WordScore,
+} from "./word-game-types";
 
-export type Tile = {
-  id: string;
-  letter: string;
-  value: number;
-};
-
-export type PlayerState = {
-  id: PlayerId;
-  name: string;
-  score: number;
-  rack: Tile[];
-};
-
-export type PlayedWord = {
-  id: string;
-  playerId: PlayerId;
-  playerName: string;
-  word: string;
-  baseScore: number;
-  bonusScore: number;
-  totalScore: number;
-  turnNumber: number;
-};
-
-export type MatchEvent =
-  | {
-      type: "match_started";
-      targetScore: number;
-      players: string[];
-      timestamp: string;
-    }
-  | {
-      type: "word_submitted";
-      playedWord: PlayedWord;
-      scores: Record<PlayerId, number>;
-      timestamp: string;
-    }
-  | {
-      type: "rack_refreshed";
-      playerId: PlayerId;
-      playerName: string;
-      turnNumber: number;
-      timestamp: string;
-    }
-  | {
-      type: "match_finished";
-      winnerId: PlayerId;
-      winnerName: string;
-      finalScores: Record<PlayerId, number>;
-      playedWords: PlayedWord[];
-      timestamp: string;
-    };
-
-export type GameState = {
-  id: string;
-  targetScore: number;
-  players: Record<PlayerId, PlayerState>;
-  currentPlayerId: PlayerId;
-  tileBag: Tile[];
-  playedWords: PlayedWord[];
-  eventLog: MatchEvent[];
-  status: "playing" | "finished";
-  winnerId: PlayerId | null;
-  turnNumber: number;
-};
-
-export type SubmitWordResult = {
-  state: GameState;
-  error?: string;
-};
-
-const tileValues: Record<string, number> = {
-  A: 1,
-  B: 3,
-  C: 3,
-  D: 2,
-  E: 1,
-  F: 4,
-  G: 2,
-  H: 4,
-  I: 1,
-  J: 8,
-  K: 5,
-  L: 1,
-  M: 3,
-  N: 1,
-  O: 1,
-  P: 3,
-  Q: 10,
-  R: 1,
-  S: 1,
-  T: 1,
-  U: 1,
-  V: 4,
-  W: 4,
-  X: 8,
-  Y: 4,
-  Z: 10,
-};
-
-const tileDistribution: Record<string, number> = {
-  A: 9,
-  B: 2,
-  C: 2,
-  D: 4,
-  E: 12,
-  F: 2,
-  G: 3,
-  H: 2,
-  I: 9,
-  J: 1,
-  K: 1,
-  L: 4,
-  M: 2,
-  N: 6,
-  O: 8,
-  P: 2,
-  Q: 1,
-  R: 6,
-  S: 4,
-  T: 6,
-  U: 4,
-  V: 2,
-  W: 2,
-  X: 1,
-  Y: 2,
-  Z: 1,
-};
-
-export function createGame(targetScore = DEFAULT_TARGET_SCORE): GameState {
+export function createGame(targetScore: number): GameState {
   let bag = shuffleTiles(createTileBag());
   const playerOneRackResult = drawTiles(bag, RACK_SIZE);
   bag = playerOneRackResult.bag;
@@ -197,7 +95,7 @@ export function submitWord(state: GameState, rawWord: string): SubmitWordResult 
   const rackAfterWord = removeWordTiles(player.rack, word);
   const drawResult = drawTiles(state.tileBag, RACK_SIZE - rackAfterWord.length);
   const nextScore = player.score + score.totalScore;
-  const playedWord: PlayedWord = {
+  const playedWord = {
     id: createId("word"),
     playerId: player.id,
     playerName: player.name,
@@ -226,19 +124,14 @@ export function submitWord(state: GameState, rawWord: string): SubmitWordResult 
     timestamp: new Date().toISOString(),
   };
   const reachedTarget = nextScore >= state.targetScore;
-  const finishEvent: MatchEvent | null = reachedTarget
-    ? {
-        type: "match_finished",
-        winnerId: player.id,
-        winnerName: player.name,
-        finalScores: {
-          "player-one": nextPlayers["player-one"].score,
-          "player-two": nextPlayers["player-two"].score,
-        },
-        playedWords: nextPlayedWords,
-        timestamp: new Date().toISOString(),
-      }
-    : null;
+  const finishEvent = createFinishEvent(
+    reachedTarget,
+    player.id,
+    player.name,
+    nextPlayers["player-one"].score,
+    nextPlayers["player-two"].score,
+    nextPlayedWords,
+  );
 
   return {
     state: {
@@ -290,7 +183,7 @@ export function refreshRack(state: GameState): GameState {
   };
 }
 
-export function scoreWord(word: string) {
+export function scoreWord(word: string): WordScore {
   const letters = normalizeWord(word).split("");
   const baseScore = letters.reduce(
     (score, letter) => score + (tileValues[letter] ?? 0),
@@ -307,7 +200,7 @@ export function scoreWord(word: string) {
   };
 }
 
-export function canBuildWord(rack: Tile[], rawWord: string) {
+export function canBuildWord(rack: Tile[], rawWord: string): boolean {
   const rackCounts = countLetters(rack.map((tile) => tile.letter));
   const wordCounts = countLetters(normalizeWord(rawWord).split(""));
 
@@ -316,41 +209,36 @@ export function canBuildWord(rack: Tile[], rawWord: string) {
   );
 }
 
-export function getPlayableRackLetters(rack: Tile[]) {
+export function getPlayableRackLetters(rack: Tile[]): string {
   return rack.map((tile) => tile.letter).join("");
 }
 
-function createTileBag() {
-  return Object.entries(tileDistribution).flatMap(([letter, count]) =>
-    Array.from({ length: count }, (_, index) => ({
-      id: `${letter}-${index}-${createId("tile")}`,
-      letter,
-      value: tileValues[letter],
-    })),
-  );
-}
+function createFinishEvent(
+  reachedTarget: boolean,
+  playerId: PlayerId,
+  playerName: string,
+  playerOneScore: number,
+  playerTwoScore: number,
+  playedWords: GameState["playedWords"],
+): MatchEvent | null {
+  if (!reachedTarget) {
+    return null;
+  }
 
-function drawTiles(bag: Tile[], count: number) {
   return {
-    drawn: bag.slice(0, count),
-    bag: bag.slice(count),
+    type: "match_finished",
+    winnerId: playerId,
+    winnerName: playerName,
+    finalScores: {
+      "player-one": playerOneScore,
+      "player-two": playerTwoScore,
+    },
+    playedWords,
+    timestamp: new Date().toISOString(),
   };
 }
 
-function removeWordTiles(rack: Tile[], word: string) {
-  const remainingRack = [...rack];
-
-  for (const letter of word) {
-    const tileIndex = remainingRack.findIndex((tile) => tile.letter === letter);
-    if (tileIndex >= 0) {
-      remainingRack.splice(tileIndex, 1);
-    }
-  }
-
-  return remainingRack;
-}
-
-function normalizeWord(word: string) {
+function normalizeWord(word: string): string {
   return word.replace(/[^a-z]/gi, "").toUpperCase();
 }
 
@@ -358,31 +246,9 @@ function getNextPlayerId(playerId: PlayerId): PlayerId {
   return playerId === "player-one" ? "player-two" : "player-one";
 }
 
-function countLetters(letters: string[]) {
+function countLetters(letters: string[]): Record<string, number> {
   return letters.reduce<Record<string, number>>((counts, letter) => {
     counts[letter] = (counts[letter] ?? 0) + 1;
     return counts;
   }, {});
-}
-
-function shuffleTiles(tiles: Tile[]) {
-  const shuffled = [...tiles];
-
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [shuffled[index], shuffled[swapIndex]] = [
-      shuffled[swapIndex],
-      shuffled[index],
-    ];
-  }
-
-  return shuffled;
-}
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }

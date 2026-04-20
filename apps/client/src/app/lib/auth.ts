@@ -36,7 +36,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   return body.user;
 }
 
-export async function requireUser(nextPath = "/dashboard"): Promise<AuthUser> {
+export async function requireUser(nextPath: string): Promise<AuthUser> {
   const user = await getCurrentUser();
 
   if (user) {
