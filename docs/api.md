@@ -217,3 +217,91 @@ The API still sets `queuedAt` server-side.
 Bull Board route configured by the API.
 
 Implementation note: Bull Board uses the shared `MATCHMAKING_QUEUE_NAME` from `packages/types`.
+
+## Matches
+
+Match endpoints require authentication and only return matches where the authenticated user is a participant.
+
+### `GET /matches/current`
+
+Returns the latest active match for the authenticated user, or `null` when they are not in an active match.
+
+Successful response:
+
+```json
+{
+  "match": {
+    "id": 1,
+    "mode": "word-duel",
+    "region": "oce",
+    "status": "ACTIVE",
+    "createdAt": "2026-04-20T00:00:00.000Z",
+    "startedAt": "2026-04-20T00:00:01.000Z",
+    "finishedAt": null,
+    "matchParticipants": [
+      {
+        "userId": 1,
+        "seat": 0,
+        "usernameSnapshot": "keez",
+        "eloSnapshot": 1200,
+        "result": null
+      },
+      {
+        "userId": 2,
+        "seat": 1,
+        "usernameSnapshot": "rival",
+        "eloSnapshot": 1200,
+        "result": null
+      }
+    ]
+  }
+}
+```
+
+### `GET /matches/:id`
+
+Returns match metadata and participant snapshots for one match.
+
+Successful response:
+
+```json
+{
+  "match": {
+    "id": 1,
+    "mode": "word-duel",
+    "region": "oce",
+    "status": "ACTIVE",
+    "createdAt": "2026-04-20T00:00:00.000Z",
+    "startedAt": "2026-04-20T00:00:01.000Z",
+    "finishedAt": null,
+    "matchParticipants": []
+  }
+}
+```
+
+Returns `404` when the match does not exist or the authenticated user is not a participant.
+
+### `GET /matches/:id/state`
+
+Returns the latest persisted game state for one match.
+
+Successful response:
+
+```json
+{
+  "state": {
+    "matchId": 1,
+    "version": 0,
+    "status": "active",
+    "state": {
+      "mode": "word-duel",
+      "region": "oce",
+      "status": "active",
+      "players": []
+    },
+    "updatedAt": "2026-04-20T00:00:02.000Z"
+  }
+}
+```
+
+Returns `404` when the match does not exist, the authenticated user is not a participant, or the match has no persisted state.

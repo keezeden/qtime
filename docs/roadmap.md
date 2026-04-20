@@ -10,9 +10,6 @@ This roadmap follows the overview while staying grounded in the current repo.
 
 ## Phase 2: Complete Matchmaking
 
-- Add match discovery endpoints for authenticated players.
-- Add game state read endpoints.
-- Add client-facing current-match polling.
 - Add queue leave/cancel support.
 - Add integration tests around enqueue -> worker -> persisted match.
 

@@ -26,6 +26,7 @@ Responsibilities:
 - Expose HTTP endpoints.
 - Manage users through Prisma.
 - Accept matchmaking queue requests.
+- Expose authenticated match discovery and state reads.
 - Publish queue jobs to Redis/BullMQ.
 - Provide Bull Board at `/queues` once queue wiring is aligned.
 
@@ -33,6 +34,7 @@ Main modules:
 
 - `UserModule`: user CRUD backed by Prisma.
 - `MatchmakingModule`: accepts queue requests and delegates to events.
+- `MatchesModule`: lets authenticated players discover their active match and read match state.
 - `EventsModule`: BullMQ queue configuration and job publishing.
 - `PrismaService`: Prisma client configured with the Postgres adapter.
 
@@ -129,5 +131,5 @@ This gives the project a clear baseline: early queue time favors fairness; longe
 ## Known Alignment Work
 
 - Add match discovery endpoints for authenticated players.
-- Add game event submission and latest-state endpoints.
+- Add game event submission endpoints.
 - Add result reporting and rating update flows.

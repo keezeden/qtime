@@ -6,6 +6,7 @@ import { UserModule } from "./user/user.module";
 import { PrismaService } from "./prisma/prisma.service";
 import { EventsModule } from "./events/events.module";
 import { MatchmakingModule } from "./matchmaking/matchmaking.module";
+import { MatchesModule } from "./matches/matches.module";
 import { ExpressAdapter } from "@bull-board/express";
 import { BullBoardModule } from "@bull-board/nestjs";
 import { BULL_BOARD_ENABLED } from "./events/queue.constants";
@@ -26,6 +27,7 @@ import { AuthModule } from "./auth/auth.module";
     AuthModule,
     EventsModule,
     MatchmakingModule,
+    MatchesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
