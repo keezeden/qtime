@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import type { AuthUser } from "@/app/lib/auth";
 import { PlayerColumn, RackPanel, ScoreChip, WordSlots } from "./word-duel-components";
 import { VISIBLE_WORD_SLOTS } from "./word-duel-constants";
+import { GameHeader, QueuePanel, StatusMessage } from "./multiplayer-queue-panel";
 import {
   fetchCurrentMatch,
   fetchGameEvents,
@@ -15,8 +15,10 @@ import {
   submitGameState,
   type MatchSummary,
 } from "./multiplayer-api";
-import { DEFAULT_TARGET_SCORE, type GameState, type PlayerId, type Tile, createGame, refreshRack, scoreWord, submitWord } from "./word-game";
+import type { GameState, Tile } from "./word-game";
+import { refreshRack, scoreWord, submitWord } from "./word-game";
 import { shuffleTiles } from "./word-game-tiles";
+import { createNamedGame, getLocalPlayerId } from "./multiplayer-state";
 
 type Props = {
   user: AuthUser;
@@ -56,6 +58,33 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     const interval = window.setInterval(() => void pollEvents(match.id), 1200);
     return () => window.clearInterval(interval);
   }, [match, version]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (!game || !rackPlayer || !isLocalTurn) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        removeLastTile();
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void commitWord();
+        return;
+      }
+
+      if (/^[a-z]$/i.test(event.key)) {
+        event.preventDefault();
+        addLetterToWord(event.key);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [game, isLocalTurn, rackPlayer, selectedTiles]);
 
   const clearSelectedTiles = useCallback((): void => {
     setSelectedTiles([]);
@@ -191,6 +220,34 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     });
   }
 
+  function addLetterToWord(letter: string): void {
+    if (!rackPlayer || !isLocalTurn) return;
+
+    const normalizedLetter = letter.toUpperCase();
+
+    setSelectedTiles((currentTiles) => {
+      if (currentTiles.length >= VISIBLE_WORD_SLOTS) {
+        return currentTiles;
+      }
+
+      const currentIds = new Set(currentTiles.map((tile) => tile.id));
+      const nextTile = rackPlayer.rack.find(
+        (tile) => tile.letter === normalizedLetter && !currentIds.has(tile.id),
+      );
+
+      if (!nextTile) {
+        setMessage(`${rackPlayer.name} has no ${normalizedLetter} tile left.`);
+        return currentTiles;
+      }
+
+      return [...currentTiles, nextTile];
+    });
+  }
+
+  function removeLastTile(): void {
+    setSelectedTiles((currentTiles) => currentTiles.slice(0, -1));
+  }
+
   return (
     <main className="flex min-h-screen flex-col overflow-hidden px-4 py-5 sm:px-6">
       <GameHeader />
@@ -202,7 +259,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
             <PlayerColumn align="left" isActive={game.currentPlayerId === "player-one"} playerId="player-one" state={game} />
             <form className="order-first flex flex-col items-center text-center lg:order-none" onSubmit={handleSubmit}>
               <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-muted">
-                {isLocalTurn ? "Your turn" : "Opponent turn"} · v{version}
+                {isLocalTurn ? "Your turn" : "Opponent turn"} / v{version}
               </p>
               <WordSlots tiles={selectedTiles} />
               <div className="mt-6 grid w-full max-w-xl grid-cols-3 gap-2 text-xs text-muted">
@@ -232,70 +289,4 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
       )}
     </main>
   );
-}
-
-function GameHeader(): React.ReactElement {
-  return (
-    <header className="flex w-full items-center justify-between gap-4">
-      <Link className="font-display text-lg font-bold italic uppercase text-accent-pink sm:text-xl" href="/">QTime</Link>
-      <Link className="font-display text-xs font-bold uppercase tracking-[0.18em] text-accent-teal" href="/dashboard">Dashboard</Link>
-    </header>
-  );
-}
-
-function QueuePanel({ message, onQueue, status }: { message: string; onQueue: () => void; status: QueueStatus }): React.ReactElement {
-  return (
-    <section className="mx-auto grid min-h-[70vh] w-full max-w-3xl place-items-center text-center">
-      <div className="border-2 border-border bg-surface-strong px-6 py-8">
-        <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-accent-yellow">Word Duel</p>
-        <h1 className="font-display mt-3 text-4xl font-bold uppercase italic text-foreground sm:text-6xl">Find Match</h1>
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted">{message || "Queue for an OCE word-duel match. The game starts when the worker pairs two players."}</p>
-        <SearchingAnimation active={status === "queued"} />
-        <button className="pressable-teal font-display mt-6 min-h-12 border-2 border-black bg-accent-teal px-6 text-sm font-bold uppercase text-[#081312]" disabled={status === "queued"} onClick={onQueue} type="button">
-          {status === "queued" ? "Searching" : "Queue Multiplayer"}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function SearchingAnimation({ active }: { active: boolean }): React.ReactElement {
-  const dots = ["0ms", "160ms", "320ms", "480ms"];
-
-  return (
-    <div className="mx-auto mt-7 flex h-14 items-center justify-center gap-3" aria-label={active ? "Searching for opponent" : "Ready to search"}>
-      {dots.map((delay, index) => (
-        <span
-          className={`block h-4 w-4 border-2 border-accent-teal bg-accent-teal ${active ? "animate-bounce" : "opacity-35"}`}
-          key={delay}
-          style={{ animationDelay: delay }}
-        >
-          <span className="sr-only">Search pulse {index + 1}</span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function StatusMessage({ message }: { message: string }): React.ReactElement {
-  return <div className="w-full max-w-4xl border-2 border-accent-pink/60 bg-accent-pink/10 px-4 py-3 text-center text-sm font-semibold text-foreground sm:text-base">{message}</div>;
-}
-
-function createNamedGame(match: MatchSummary): GameState {
-  const game = createGame(DEFAULT_TARGET_SCORE);
-  const names = Object.fromEntries(match.matchParticipants.map((participant) => [participant.seat, participant.usernameSnapshot]));
-
-  return {
-    ...game,
-    players: {
-      "player-one": { ...game.players["player-one"], name: names[0] ?? "Player One" },
-      "player-two": { ...game.players["player-two"], name: names[1] ?? "Player Two" },
-    },
-  };
-}
-
-function getLocalPlayerId(match: MatchSummary | null, userId: number): PlayerId | null {
-  const participant = match?.matchParticipants.find((item) => item.userId === userId);
-  if (!participant) return null;
-  return participant.seat === 0 ? "player-one" : "player-two";
 }
