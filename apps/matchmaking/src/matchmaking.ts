@@ -1,6 +1,7 @@
 import { MATCHMAKING_QUEUE_NAME } from "@qtime/types";
 import type { MatchmakingPair, QueuedPlayer } from "@qtime/types";
-import { Queue } from "bullmq";
+import { Job, Queue } from "bullmq";
+import { MatchPersistence } from "./match-persistence";
 import { getTenSecondBlocksSince } from "./utils";
 
 const POLL_INTERVAL_MS = Number(process.env.MATCHMAKING_POLL_INTERVAL_MS ?? 2000);
@@ -93,22 +94,61 @@ export const getGroupedMatches = (
   return matches;
 };
 
-const processQueue = async (queue: Queue<QueuedPlayer>): Promise<void> => {
-  const players = await queue.getWaiting();
-  const groupedQueues = groupPlayersByModeAndRegion(players.map((player) => player.data));
+const getMatchedJobs = (
+  waitingJobs: Job<QueuedPlayer>[],
+  match: MatchmakingPair,
+): Job<QueuedPlayer>[] => {
+  const matchedUserIds = new Set(match.players.map((player) => player.userId));
+
+  return waitingJobs.filter((job) => matchedUserIds.has(job.data.userId));
+};
+
+const removeMatchedJobs = async (
+  waitingJobs: Job<QueuedPlayer>[],
+  match: MatchmakingPair,
+): Promise<void> => {
+  const matchedJobs = getMatchedJobs(waitingJobs, match);
+
+  await Promise.all(matchedJobs.map((job) => job.remove()));
+};
+
+const persistMatches = async (
+  waitingJobs: Job<QueuedPlayer>[],
+  matches: MatchmakingPair[],
+  persistence: MatchPersistence,
+): Promise<void> => {
+  for (const match of matches) {
+    const matchId = await persistence.persistPair(match);
+    await removeMatchedJobs(waitingJobs, match);
+    console.log("Match persisted", {
+      matchId,
+      mode: match.mode,
+      region: match.region,
+      playerUserIds: match.players.map((player) => player.userId),
+    });
+  }
+};
+
+const processQueue = async (
+  queue: Queue<QueuedPlayer>,
+  persistence: MatchPersistence,
+): Promise<void> => {
+  const waitingJobs = await queue.getWaiting();
+  const groupedQueues = groupPlayersByModeAndRegion(waitingJobs.map((job) => job.data));
   const matches = getGroupedMatches(groupedQueues);
 
-  console.log("Matches found: ", matches);
+  await persistMatches(waitingJobs, matches, persistence);
 };
 
 const startWorker = (): void => {
   const queue = createQueue();
+  const persistence = new MatchPersistence();
   let currentRun: Promise<void> | undefined;
 
   const poll = (): void => {
     if (currentRun) return;
 
-    currentRun = processQueue(queue)
+    currentRun = processQueue(queue, persistence)
       .catch((error) => {
         console.error("Matchmaking poll failed:", error);
       })
@@ -125,6 +165,7 @@ const startWorker = (): void => {
     clearInterval(interval);
 
     await currentRun;
+    await persistence.close();
     await queue.close();
   };
 

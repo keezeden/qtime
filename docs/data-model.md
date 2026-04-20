@@ -9,7 +9,8 @@ erDiagram
   User ||--o{ MatchParticipant : participates
   User ||--o{ Session : owns
   Match ||--o{ MatchParticipant : contains
-  MatchParticipant ||--o{ ParticipantStatistics : has
+  Match ||--|| GameState : has
+  Match ||--o{ GameEvent : records
 
   User {
     int id PK
@@ -32,20 +33,39 @@ erDiagram
 
   Match {
     int id PK
+    string mode
+    string region
+    MatchStatus status
+    datetime createdAt
+    datetime startedAt
+    datetime finishedAt
   }
 
   MatchParticipant {
     int matchId PK
     int userId PK
-    Team team
+    int seat
+    string usernameSnapshot
+    int eloSnapshot
+    MatchResult result
   }
 
-  ParticipantStatistics {
+  GameState {
     int matchId PK
-    int userId PK
-    int kills
-    int deaths
-    int assists
+    int version
+    string status
+    json state
+    datetime updatedAt
+  }
+
+  GameEvent {
+    int id PK
+    int matchId FK
+    int version
+    int userId
+    string type
+    json payload
+    datetime createdAt
   }
 ```
 
@@ -88,10 +108,18 @@ Represents one created match.
 Fields:
 
 - `id`: auto-incrementing primary key.
+- `mode`: game mode that produced the match.
+- `region`: matchmaking region.
+- `status`: lifecycle value, currently `PENDING`, `ACTIVE`, `FINISHED`, or `CANCELLED`.
+- `createdAt`: creation timestamp.
+- `startedAt`: set when the match becomes active.
+- `finishedAt`: set when the match is completed or cancelled.
 
 Relationships:
 
 - Has many `MatchParticipant` rows.
+- Has one `GameState` row.
+- Has many `GameEvent` rows.
 
 ## MatchParticipant
 
@@ -101,25 +129,41 @@ Fields:
 
 - `matchId`: part of the composite primary key.
 - `userId`: part of the composite primary key.
-- `team`: enum value, currently `RED` or `BLUE`.
+- `seat`: deterministic player position within the match, starting at `0`.
+- `usernameSnapshot`: display name captured when the player entered the match.
+- `eloSnapshot`: rating value captured when the player entered the match.
+- `result`: optional match result for the player.
 
 Relationships:
 
 - Belongs to one `User`.
 - Belongs to one `Match`.
-- Has participant statistics.
 
-## ParticipantStatistics
+## GameState
 
-Stores per-player match stats.
+Stores the latest client-authoritative state snapshot for a match.
 
 Fields:
 
-- `matchId`: part of the composite primary key.
-- `userId`: part of the composite primary key.
-- `kills`: defaults to `0`.
-- `deaths`: defaults to `0`.
-- `assists`: defaults to `0`.
+- `matchId`: primary key and owning match id.
+- `version`: optimistic concurrency version for client updates.
+- `status`: lightweight game-state status string.
+- `state`: JSON snapshot of the latest game state.
+- `updatedAt`: update timestamp.
+
+## GameEvent
+
+Stores accepted client game events for audit and replay-friendly history.
+
+Fields:
+
+- `id`: auto-incrementing primary key.
+- `matchId`: owning match id.
+- `version`: monotonically increasing version within the match.
+- `userId`: user that submitted the event.
+- `type`: event type.
+- `payload`: event payload JSON.
+- `createdAt`: creation timestamp.
 
 ## Planned Data Additions
 
@@ -127,15 +171,12 @@ The overview calls for several durable concepts that are not modeled yet:
 
 - Player ratings.
 - Rating history.
-- Match status and timestamps.
 - Match results.
 - Queue snapshots or audit records.
-- Region and game mode preferences.
 - Leaderboard projections.
 
 Suggested next Prisma additions:
 
 - Add `rating`, `ratingDeviation`, or equivalent fields to `User` or a `PlayerRating` model.
 - Add `RatingHistory` with old/new rating, delta, algorithm, and match id.
-- Add `Match.status`, `Match.createdAt`, `Match.startedAt`, and `Match.finishedAt`.
 - Add a result or winner field once match outcome semantics are defined.

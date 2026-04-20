@@ -13,10 +13,20 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Team {
-  RED
-  BLUE
+enum MatchStatus {
+  PENDING
+  ACTIVE
+  FINISHED
+  CANCELLED
 }
+
+enum MatchResult {
+  WIN
+  LOSS
+  DRAW
+  ABANDONED
+}
+
 model User {
   id               Int               @id @default(autoincrement())
   username         String            @unique
@@ -44,10 +54,17 @@ model Session {
 }
 
 model Match {
-  id Int @id @default(autoincrement())
+  id         Int         @id @default(autoincrement())
+  mode       String      @default("word-duel")
+  region     String      @default("oce")
+  status     MatchStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
 
   matchParticipants MatchParticipant[]
-
+  gameState         GameState?
+  gameEvents        GameEvent[]
 }
 
 model MatchParticipant {
@@ -57,21 +74,33 @@ model MatchParticipant {
   user   User @relation(fields: [userId], references: [id])
   match   Match @relation(fields: [matchId], references: [id])
 
-  team Team
-  participantStatistics ParticipantStatistics[]
+  seat             Int
+  usernameSnapshot String       @default("")
+  eloSnapshot      Int          @default(1200)
+  result           MatchResult?
 }
 
+model GameState {
+  matchId   Int      @id
+  version   Int      @default(0)
+  status    String
+  state     Json
+  updatedAt DateTime @updatedAt
 
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+}
 
-model ParticipantStatistics {
-  @@id([matchId, userId])
+model GameEvent {
+  id        Int      @id @default(autoincrement())
+  matchId   Int
+  version   Int
+  userId    Int
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
 
-  matchId Int
-  userId  Int
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
-  participant MatchParticipant @relation(fields: [matchId, userId], references: [matchId, userId])
-
-  kills   Int @default(0)
-  deaths  Int @default(0)
-  assists Int @default(0)
+  @@unique([matchId, version])
+  @@index([matchId])
 }

@@ -51,8 +51,9 @@ Responsibilities:
 Current behavior:
 
 - Runs every 2 seconds outside test mode.
-- Logs matches found.
-- Does not yet persist matches or remove consumed queue jobs.
+- Persists matched pairs as active matches.
+- Creates participant rows, participant statistics rows, and an initial game state snapshot.
+- Removes matched BullMQ jobs after successful persistence.
 
 ### Shared Types
 
@@ -107,8 +108,8 @@ sequenceDiagram
   API->>Redis: enqueue player
   Worker->>Redis: poll waiting players
   Worker->>Worker: group by mode, region, and rating window
-  Worker->>DB: create match (planned)
-  Worker->>Redis: remove matched players (planned)
+  Worker->>DB: create active match and game state
+  Worker->>Redis: remove matched players
   Player->>API: report result (planned)
   API->>DB: persist result (planned)
 ```
@@ -127,6 +128,6 @@ This gives the project a clear baseline: early queue time favors fairness; longe
 
 ## Known Alignment Work
 
-- Persist matches once the worker finds a pair.
-- Remove or complete consumed queue jobs after match creation.
+- Add match discovery endpoints for authenticated players.
+- Add game event submission and latest-state endpoints.
 - Add result reporting and rating update flows.

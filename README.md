@@ -110,7 +110,7 @@ The API listens on `http://localhost:3000` by default.
 QTime is in an early build phase. A few contracts still need alignment as features harden:
 
 - The matchmaking queue contract is shared through `packages/types`.
-- The matchmaking worker currently logs matched pairs; match persistence and queue cleanup are still future work.
+- The matchmaking worker persists matched pairs as active matches with participant snapshots and initial game state, then removes the matched queue jobs.
 - Ratings are not persisted yet; matchmaking enqueues players with a temporary `elo` value of `1200`.
 
 These are documented deliberately so the next implementation steps are visible instead of hidden in code.
