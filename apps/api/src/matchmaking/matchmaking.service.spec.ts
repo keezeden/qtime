@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MatchmakingService } from './matchmaking.service';
 import { EventsService } from '../events/events.service';
-import { MATCHMAKING_QUEUED_JOB_NAME } from '../events/queue.constants';
 
 describe('MatchmakingService', () => {
   let service: MatchmakingService;
@@ -25,22 +24,79 @@ describe('MatchmakingService', () => {
     service = module.get<MatchmakingService>(MatchmakingService);
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+    process.env.NODE_ENV = 'test';
+  });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
   it('should enqueue a matchmaking queued event payload', async () => {
-    const player = {
-      userId: 42,
-      startTime: '2026-01-01T00:00:00.000Z',
+    jest
+      .spyOn(Date.prototype, 'toISOString')
+      .mockReturnValue('2026-01-01T00:00:00.000Z');
+
+    const input = {
       region: 'oce' as const,
-      elo: 1200,
+      mode: 'word-duel' as const,
+    };
+    const user = {
+      id: 42,
+      username: 'keez',
+      nametag: null,
     };
 
-    await expect(service.queueMatchmaking(player)).resolves.toEqual({ jobId: 'job-1' });
-    expect(eventsService.pushMatchmaking).toHaveBeenCalledWith(MATCHMAKING_QUEUED_JOB_NAME, {
-      jobType: MATCHMAKING_QUEUED_JOB_NAME,
-      ...player,
+    await expect(service.queueMatchmaking(input, user)).resolves.toEqual({ jobId: 'job-1' });
+    expect(eventsService.pushMatchmaking).toHaveBeenCalledWith({
+      userId: 42,
+      username: 'keez',
+      region: 'oce',
+      elo: 1200,
+      mode: 'word-duel',
+      queuedAt: '2026-01-01T00:00:00.000Z',
     });
+  });
+
+  it('should enqueue synthetic players through the dev endpoint service', async () => {
+    jest
+      .spyOn(Date.prototype, 'toISOString')
+      .mockReturnValue('2026-01-01T00:00:00.000Z');
+
+    await expect(
+      service.queueDevMatchmaking({
+        userId: 100,
+        username: 'synthetic',
+        region: 'na',
+        elo: 1300,
+        mode: 'word-duel',
+      }),
+    ).resolves.toEqual({ jobId: 'job-1' });
+
+    expect(eventsService.pushMatchmaking).toHaveBeenCalledWith({
+      userId: 100,
+      username: 'synthetic',
+      region: 'na',
+      elo: 1300,
+      mode: 'word-duel',
+      queuedAt: '2026-01-01T00:00:00.000Z',
+    });
+  });
+
+  it('should reject synthetic queueing in production', async () => {
+    process.env.NODE_ENV = 'production';
+
+    await expect(
+      service.queueDevMatchmaking({
+        userId: 100,
+        username: 'synthetic',
+        region: 'na',
+        elo: 1300,
+        mode: 'word-duel',
+      }),
+    ).rejects.toThrow('Dev matchmaking endpoint is unavailable in production.');
+    expect(eventsService.pushMatchmaking).not.toHaveBeenCalled();
+
   });
 });

@@ -34,22 +34,15 @@ flowchart LR
 
 ## Required Application Changes
 
-### 1. Align Queue Names
+### 1. Complete Queue Processing
 
-Use one canonical queue name across the API producer, BullMQ registration, Bull Board, and worker consumer.
+The API producer, BullMQ registration, Bull Board, and worker consumer now use the shared `MATCHMAKING_QUEUE_NAME` from `packages/types`.
 
-Current mismatch to fix:
+Remaining queue work:
 
-- API registers queue name `events`.
-- API injects queue name `matchmaking`.
-- Worker reads queue name `matchmaking.queued`.
-- API job name is `matchmaking.queued`.
-
-Target shape:
-
-- Queue name: `matchmaking`
-- Job name: `matchmaking.queued`
-- Shared constant or config value used by API and worker.
+- Persist matches produced by the worker.
+- Complete or remove matched queue jobs.
+- Prevent duplicate queue entries for the same player.
 
 ### 2. Make API Container Production-Ready
 
@@ -134,7 +127,7 @@ If the client and API are hosted on different domains, enable CORS in the NestJS
 
 ### Phase 1: Production-Shape Local Services
 
-- Fix queue naming across API, worker, and Bull Board.
+- Complete queue job cleanup after the worker finds matches.
 - Update API Dockerfile to run production mode.
 - Add worker production build and runtime command.
 - Add API health endpoint.
@@ -202,11 +195,9 @@ If the client and API are hosted on different domains, enable CORS in the NestJS
 
 ## Current Risks Before AWS Deployment
 
-- Queue naming is inconsistent between API and worker.
 - API Dockerfile runs development mode.
 - Migrations are tied to development startup behavior.
 - Worker does not yet persist matches or complete/remove matched queue jobs.
-- Worker does not yet handle graceful shutdown.
 - Bull Board would be public unless protected.
 - No AWS infrastructure-as-code exists yet.
 - Frontend deployment strategy has not been chosen.

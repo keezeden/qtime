@@ -1,9 +1,21 @@
-import { Region } from "../user";
+import type { Region } from "../user";
 
-export type PlayerQueuedEvent = {
-  jobType: "matchmaking.queued";
+export type MatchmakingMode = "word-duel";
+
+export type QueuedPlayer = {
   userId: number;
-  startTime: string;
+  username: string;
   region: Region;
   elo: number;
+  mode: MatchmakingMode;
+  queuedAt: string;
 };
+
+export type MatchmakingPair = {
+  mode: MatchmakingMode;
+  region: Region;
+  players: [QueuedPlayer, QueuedPlayer];
+  matchedAt: string;
+};
+
+export const MATCHMAKING_QUEUE_NAME = "matchmaking";

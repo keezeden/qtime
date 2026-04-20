@@ -158,25 +158,29 @@ Successful response:
 
 ### `POST /matchmaking`
 
-Queue a player for matchmaking.
+Queue the authenticated user for matchmaking.
 
-Current API DTO:
+Authentication is required. The client may only choose safe queue fields:
 
 ```json
 {
-  "id": "1"
+  "region": "oce",
+  "mode": "word-duel"
 }
 ```
 
-Target event shape:
+The API derives `userId` and `username` from the authenticated user, uses `elo: 1200` until ratings are persisted, and sets `queuedAt` server-side.
+
+Enqueued payload:
 
 ```json
 {
-  "jobType": "matchmaking.queued",
   "userId": 1,
-  "startTime": "2026-04-19T00:00:00.000Z",
+  "username": "keez",
   "region": "oce",
-  "elo": 1200
+  "elo": 1200,
+  "mode": "word-duel",
+  "queuedAt": "2026-04-19T00:00:00.000Z"
 }
 ```
 
@@ -188,7 +192,23 @@ Successful response:
 }
 ```
 
-Implementation note: the target event shape is already defined in `packages/types`, but the API DTO should be expanded before the endpoint is treated as stable.
+### `POST /matchmaking/dev`
+
+Development-only endpoint for enqueueing synthetic players. In production this route returns `404`.
+
+Request body:
+
+```json
+{
+  "userId": 100,
+  "username": "synthetic",
+  "region": "oce",
+  "elo": 1200,
+  "mode": "word-duel"
+}
+```
+
+The API still sets `queuedAt` server-side.
 
 ## Queue Dashboard
 
@@ -196,4 +216,4 @@ Implementation note: the target event shape is already defined in `packages/type
 
 Bull Board route configured by the API.
 
-Implementation note: this depends on BullMQ queue registration being aligned with the queue used by `EventsService`.
+Implementation note: Bull Board uses the shared `MATCHMAKING_QUEUE_NAME` from `packages/types`.

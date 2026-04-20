@@ -1,13 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue, JobsOptions, Job } from "bullmq";
-import { MATCHMAKING_QUEUE_NAME } from "./queue.constants";
+import { MATCHMAKING_QUEUE_NAME } from "@qtime/types";
+import type { QueuedPlayer } from "@qtime/types";
+import { MATCHMAKING_QUEUED_JOB_NAME } from "./queue.constants";
 
 @Injectable()
 export class EventsService {
   constructor(@InjectQueue(MATCHMAKING_QUEUE_NAME) private readonly matchmakingQueue: Queue) {}
 
-  async pushMatchmaking<T>(type: string, payload: T, options?: JobsOptions): Promise<Job> {
-    return await this.matchmakingQueue.add(type, payload, options);
+  async pushMatchmaking(payload: QueuedPlayer, options?: JobsOptions): Promise<Job<QueuedPlayer>> {
+    return await this.matchmakingQueue.add(MATCHMAKING_QUEUED_JOB_NAME, payload, options);
   }
 }

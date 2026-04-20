@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MatchmakingController } from './matchmaking.controller';
 import { MatchmakingService } from './matchmaking.service';
 import { EventsService } from '../events/events.service';
+import { AccessTokenGuard } from '../auth/guards/access-token.guard';
 
 describe('MatchmakingController', () => {
   let controller: MatchmakingController;
@@ -18,7 +19,10 @@ describe('MatchmakingController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AccessTokenGuard)
+      .useValue({ canActivate: jest.fn().mockReturnValue(true) })
+      .compile();
 
     controller = module.get<MatchmakingController>(MatchmakingController);
   });

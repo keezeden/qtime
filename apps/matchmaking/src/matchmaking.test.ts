@@ -1,18 +1,22 @@
-import { PlayerQueuedEvent, Region } from "@qtime/types";
-import { findMatches, getRegionMatches } from "./matchmaking";
+import { QueuedPlayer } from "@qtime/types";
+import { findMatches, getGroupedMatches, groupPlayersByModeAndRegion } from "./matchmaking";
 
 function makePlayer(input: {
-  userId: string;
-  region: string;
+  userId: number;
+  username: string;
+  region: QueuedPlayer["region"];
   elo: number;
-  startTime: string;
-}): PlayerQueuedEvent {
+  queuedAt: string;
+  mode: QueuedPlayer["mode"];
+}): QueuedPlayer {
   return {
     userId: input.userId,
-    region: input.region as Region,
+    username: input.username,
+    region: input.region,
     elo: input.elo,
-    startTime: input.startTime,
-  } as unknown as PlayerQueuedEvent;
+    mode: input.mode,
+    queuedAt: input.queuedAt,
+  };
 }
 
 describe("findMatches", () => {
@@ -25,23 +29,28 @@ describe("findMatches", () => {
 
     const players = [
       makePlayer({
-        userId: "p1",
-        region: "NA",
+        userId: 1,
+        username: "p1",
+        region: "na",
         elo: 1000,
-        startTime: "2026-01-01T00:00:10.000Z",
+        queuedAt: "2026-01-01T00:00:10.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "p2",
-        region: "NA",
+        userId: 2,
+        username: "p2",
+        region: "na",
         elo: 1200,
-        startTime: "2026-01-01T00:00:20.000Z",
+        queuedAt: "2026-01-01T00:00:20.000Z",
+        mode: "word-duel",
       }),
     ];
 
-    const matches = findMatches("NA" as Region, players);
+    const matches = findMatches(players);
 
     expect(matches).toHaveLength(1);
-    expect(matches[0].map((player) => player.userId)).toEqual(["p1", "p2"]);
+    expect(matches[0].players.map((player) => player.userId)).toEqual([1, 2]);
+    expect(matches[0]).toMatchObject({ mode: "word-duel", region: "na" });
   });
 
   it("does not match players when elo difference exceeds the current window", () => {
@@ -49,20 +58,24 @@ describe("findMatches", () => {
 
     const players = [
       makePlayer({
-        userId: "p1",
-        region: "NA",
+        userId: 1,
+        username: "p1",
+        region: "na",
         elo: 1000,
-        startTime: "2026-01-01T00:00:05.000Z",
+        queuedAt: "2026-01-01T00:00:05.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "p2",
-        region: "NA",
+        userId: 2,
+        username: "p2",
+        region: "na",
         elo: 1010,
-        startTime: "2026-01-01T00:00:05.000Z",
+        queuedAt: "2026-01-01T00:00:05.000Z",
+        mode: "word-duel",
       }),
     ];
 
-    const matches = findMatches("NA" as Region, players);
+    const matches = findMatches(players);
 
     expect(matches).toEqual([]);
   });
@@ -72,81 +85,114 @@ describe("findMatches", () => {
 
     const players = [
       makePlayer({
-        userId: "p1",
-        region: "NA",
+        userId: 1,
+        username: "p1",
+        region: "na",
         elo: 1000,
-        startTime: "2026-01-01T00:00:00.000Z",
+        queuedAt: "2026-01-01T00:00:00.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "p2",
-        region: "NA",
+        userId: 2,
+        username: "p2",
+        region: "na",
         elo: 1010,
-        startTime: "2026-01-01T00:00:01.000Z",
+        queuedAt: "2026-01-01T00:00:01.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "p3",
-        region: "NA",
+        userId: 3,
+        username: "p3",
+        region: "na",
         elo: 1020,
-        startTime: "2026-01-01T00:00:02.000Z",
+        queuedAt: "2026-01-01T00:00:02.000Z",
+        mode: "word-duel",
       }),
     ];
 
-    const matches = findMatches("NA" as Region, players);
+    const matches = findMatches(players);
 
     expect(matches).toHaveLength(1);
-    expect(matches[0].map((player) => player.userId)).toEqual(["p1", "p2"]);
+    expect(matches[0].players.map((player) => player.userId)).toEqual([1, 2]);
   });
 });
 
-describe("getRegionMatches", () => {
+describe("getGroupedMatches", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("matches players per region and aggregates all regional matches", () => {
+  it("matches players per mode and region and aggregates grouped matches", () => {
     jest.spyOn(Date, "now").mockReturnValue(new Date("2026-01-01T00:02:00.000Z").getTime());
 
     const players = [
       makePlayer({
-        userId: "na-1",
-        region: "NA",
+        userId: 1,
+        username: "na-1",
+        region: "na",
         elo: 1000,
-        startTime: "2026-01-01T00:00:00.000Z",
+        queuedAt: "2026-01-01T00:00:00.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "na-2",
-        region: "NA",
+        userId: 2,
+        username: "na-2",
+        region: "na",
         elo: 1030,
-        startTime: "2026-01-01T00:00:01.000Z",
+        queuedAt: "2026-01-01T00:00:01.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "eu-1",
-        region: "EU",
+        userId: 3,
+        username: "eu-1",
+        region: "eu",
         elo: 1500,
-        startTime: "2026-01-01T00:00:00.000Z",
+        queuedAt: "2026-01-01T00:00:00.000Z",
+        mode: "word-duel",
       }),
       makePlayer({
-        userId: "eu-2",
-        region: "EU",
+        userId: 4,
+        username: "eu-2",
+        region: "eu",
         elo: 1520,
-        startTime: "2026-01-01T00:00:01.000Z",
+        queuedAt: "2026-01-01T00:00:01.000Z",
+        mode: "word-duel",
       }),
     ];
 
-    const regionalQueues = players.reduce(
-      (acc, player) => {
-        const queue = acc[player.region] ?? [];
-        queue.push(player);
-        acc[player.region] = queue;
-        return acc;
-      },
-      {} as Record<Region, PlayerQueuedEvent[]>,
-    );
+    const groupedQueues = groupPlayersByModeAndRegion(players);
 
-    const matches = getRegionMatches(regionalQueues);
+    const matches = getGroupedMatches(groupedQueues);
 
     expect(matches).toHaveLength(2);
-    const ids = matches.map((pair) => pair.map((player) => player.userId).sort().join("-"));
+    const ids = matches.map((pair) => pair.players.map((player) => player.username).sort().join("-"));
     expect(ids).toEqual(expect.arrayContaining(["na-1-na-2", "eu-1-eu-2"]));
+  });
+
+  it("does not match players from different regions", () => {
+    jest.spyOn(Date, "now").mockReturnValue(new Date("2026-01-01T00:02:00.000Z").getTime());
+
+    const players = [
+      makePlayer({
+        userId: 1,
+        username: "na-1",
+        region: "na",
+        elo: 1000,
+        queuedAt: "2026-01-01T00:00:00.000Z",
+        mode: "word-duel",
+      }),
+      makePlayer({
+        userId: 2,
+        username: "eu-1",
+        region: "eu",
+        elo: 1000,
+        queuedAt: "2026-01-01T00:00:00.000Z",
+        mode: "word-duel",
+      }),
+    ];
+
+    const matches = getGroupedMatches(groupPlayersByModeAndRegion(players));
+
+    expect(matches).toEqual([]);
   });
 });

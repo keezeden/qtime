@@ -4,17 +4,15 @@ This roadmap follows the overview while staying grounded in the current repo.
 
 ## Phase 1: Align Current Contracts
 
-- Make the API matchmaking DTO match `PlayerQueuedEvent`.
-- Use one queue name for API publishing, Bull Board display, and worker consumption.
-- Standardize region values across tests, shared types, API requests, and worker logic.
+- Persist matches produced by the matchmaking worker.
+- Remove or complete consumed queue jobs after match creation.
+- Prevent duplicate queue entries for the same player.
 - Fix root development scripts so `npm run dev` starts real services.
 - Decide whether `apps/elo` is a separate service or a package used by the API.
 
 ## Phase 2: Complete Matchmaking
 
-- Persist a `Match` and `MatchParticipant` rows when the worker finds a pair.
-- Remove or complete queue jobs for matched players.
-- Prevent duplicate queue entries for the same player.
+- Persist `Match` and `MatchParticipant` rows when the worker finds a pair.
 - Add queue leave/cancel support.
 - Add integration tests around enqueue -> worker -> persisted match.
 

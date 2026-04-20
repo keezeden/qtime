@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsService } from './events.service';
 import { getQueueToken } from '@nestjs/bullmq';
-import { MATCHMAKING_QUEUE_NAME } from './queue.constants';
+import { MATCHMAKING_QUEUE_NAME } from '@qtime/types';
 
 describe('EventsService', () => {
   let service: EventsService;

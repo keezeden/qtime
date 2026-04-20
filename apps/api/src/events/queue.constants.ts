@@ -1,4 +1,3 @@
-export const MATCHMAKING_QUEUE_NAME = process.env.MATCHMAKING_QUEUE_NAME ?? "matchmaking";
 export const MATCHMAKING_QUEUED_JOB_NAME = "matchmaking.queued";
 
 export const BULL_BOARD_ENABLED =

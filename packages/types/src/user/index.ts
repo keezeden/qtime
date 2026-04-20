@@ -1,1 +1,1 @@
-export type Region = "oce" | "us" | "eu" | "asia";
+export type Region = "oce" | "na" | "eu" | "asia";

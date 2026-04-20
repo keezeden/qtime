@@ -3,7 +3,8 @@ import { EventsService } from "./events.service";
 import { BullModule } from "@nestjs/bullmq";
 import { BullBoardModule } from "@bull-board/nestjs";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
-import { BULL_BOARD_ENABLED, MATCHMAKING_QUEUE_NAME } from "./queue.constants";
+import { MATCHMAKING_QUEUE_NAME } from "@qtime/types";
+import { BULL_BOARD_ENABLED } from "./queue.constants";
 
 @Module({
   imports: [

@@ -43,8 +43,8 @@ Location: `apps/matchmaking`
 Responsibilities:
 
 - Poll queued matchmaking jobs.
-- Group waiting players by region.
-- Sort players by queue start time.
+- Group waiting players by mode and region.
+- Sort players by queue time.
 - Expand acceptable ELO difference as queue time increases.
 - Produce pairs of matched players.
 
@@ -65,7 +65,8 @@ Responsibilities:
 
 Important types:
 
-- `PlayerQueuedEvent`
+- `QueuedPlayer`
+- `MatchmakingPair`
 - `MatchFinishedEvent`
 - `Region`
 
@@ -105,7 +106,7 @@ sequenceDiagram
   Player->>API: POST /matchmaking
   API->>Redis: enqueue player
   Worker->>Redis: poll waiting players
-  Worker->>Worker: group by region and rating window
+  Worker->>Worker: group by mode, region, and rating window
   Worker->>DB: create match (planned)
   Worker->>Redis: remove matched players (planned)
   Player->>API: report result (planned)
@@ -116,19 +117,16 @@ sequenceDiagram
 
 The current worker uses a simple expanding-window strategy:
 
-1. Sort players by `startTime`, oldest first.
+1. Sort players by `queuedAt`, oldest first.
 2. For each player, calculate how many 10-second blocks they have waited.
 3. Set the acceptable ELO window to `waitBlocks * 50`.
-4. Match with another player in the same regional queue when the ELO difference is within that window.
+4. Match with another player in the same mode and regional queue when the ELO difference is within that window.
 5. Do not include the same player in more than one match.
 
 This gives the project a clear baseline: early queue time favors fairness; longer wait time gradually favors getting a match.
 
 ## Known Alignment Work
 
-- Use one canonical queue name across the API producer, BullMQ registration, Bull Board, and worker consumer.
-- Make the API queue DTO match `PlayerQueuedEvent`.
-- Standardize region values. Shared types currently use lowercase regions: `oce`, `us`, `eu`, `asia`.
 - Persist matches once the worker finds a pair.
 - Remove or complete consumed queue jobs after match creation.
 - Add result reporting and rating update flows.
