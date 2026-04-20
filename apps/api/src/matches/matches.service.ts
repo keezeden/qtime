@@ -1,10 +1,11 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { MatchResult, MatchStatus } from '../generated/prisma/enums';
+import { MatchStatus } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateGameEventDto } from './dto/create-game-event.dto';
 import type { ListGameEventsDto } from './dto/list-game-events.dto';
 import { GAME_EVENT_TYPES, type GameEventType } from './game-event-types';
+import { finishMatch } from './match-finalization';
 import type {
   CurrentMatchResponse,
   GameEventAcceptedResponse,
@@ -159,9 +160,7 @@ export class MatchesService {
         select: gameStateSelect,
       });
 
-      if (input.type === 'match_finished') {
-        await this.finishMatch(transaction, matchId, input.nextState);
-      }
+      if (input.type === 'match_finished') await finishMatch(transaction, matchId, input.nextState);
 
       return { event, state: updatedState };
     });
@@ -207,54 +206,6 @@ export class MatchesService {
     if (!match) {
       throw new NotFoundException('Active match was not found for the authenticated user.');
     }
-  }
-
-  private async finishMatch(
-    transaction: Prisma.TransactionClient,
-    matchId: number,
-    nextState: Prisma.InputJsonObject,
-  ): Promise<void> {
-    const winnerUserId = this.readWinnerUserId(nextState);
-    const participants = await transaction.matchParticipant.findMany({
-      where: { matchId },
-      select: { userId: true },
-    });
-
-    if (!winnerUserId || !participants.some((participant) => participant.userId === winnerUserId)) {
-      throw new ConflictException('match_finished events must include a participant winnerUserId.');
-    }
-
-    await transaction.match.update({
-      where: { id: matchId },
-      data: {
-        status: MatchStatus.FINISHED,
-        finishedAt: new Date(),
-      },
-      select: { id: true },
-    });
-
-    await Promise.all(
-      participants.map((participant) =>
-        transaction.matchParticipant.update({
-          where: {
-            matchId_userId: {
-              matchId,
-              userId: participant.userId,
-            },
-          },
-          data: {
-            result: participant.userId === winnerUserId ? MatchResult.WIN : MatchResult.LOSS,
-          },
-          select: { matchId: true, userId: true },
-        }),
-      ),
-    );
-  }
-
-  private readWinnerUserId(nextState: Prisma.InputJsonObject): number | null {
-    const winnerUserId = nextState.winnerUserId;
-
-    return typeof winnerUserId === 'number' && Number.isInteger(winnerUserId) ? winnerUserId : null;
   }
 
   private serializeMatch(match: MatchRecord): MatchResponse['match'] {

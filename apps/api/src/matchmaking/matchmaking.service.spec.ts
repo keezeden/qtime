@@ -1,14 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MatchmakingService } from './matchmaking.service';
 import { EventsService } from '../events/events.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('MatchmakingService', () => {
   let service: MatchmakingService;
   let eventsService: { pushMatchmaking: jest.Mock };
+  let prismaService: { user: { findUnique: jest.Mock } };
 
   beforeEach(async () => {
     eventsService = {
       pushMatchmaking: jest.fn().mockResolvedValue({ id: 'job-1' }),
+    };
+    prismaService = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ rating: 1300 }),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -17,6 +24,10 @@ describe('MatchmakingService', () => {
         {
           provide: EventsService,
           useValue: eventsService,
+        },
+        {
+          provide: PrismaService,
+          useValue: prismaService,
         },
       ],
     }).compile();
@@ -53,7 +64,7 @@ describe('MatchmakingService', () => {
       userId: 42,
       username: 'keez',
       region: 'oce',
-      elo: 1200,
+      elo: 1300,
       mode: 'word-duel',
       queuedAt: '2026-01-01T00:00:00.000Z',
     });

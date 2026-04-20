@@ -3,6 +3,7 @@ import { MatchmakingController } from './matchmaking.controller';
 import { MatchmakingService } from './matchmaking.service';
 import { EventsService } from '../events/events.service';
 import { AccessTokenGuard } from '../auth/guards/access-token.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('MatchmakingController', () => {
   let controller: MatchmakingController;
@@ -16,6 +17,14 @@ describe('MatchmakingController', () => {
           provide: EventsService,
           useValue: {
             pushMatchmaking: jest.fn(),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findUnique: jest.fn(),
+            },
           },
         },
       ],

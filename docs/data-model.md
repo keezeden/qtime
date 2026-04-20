@@ -7,16 +7,19 @@ QTime uses Prisma with PostgreSQL. The schema lives at `apps/api/prisma/schema.p
 ```mermaid
 erDiagram
   User ||--o{ MatchParticipant : participates
+  User ||--o{ RatingHistory : has
   User ||--o{ Session : owns
   Match ||--o{ MatchParticipant : contains
   Match ||--|| GameState : has
   Match ||--o{ GameEvent : records
+  Match ||--o{ RatingHistory : produces
 
   User {
     int id PK
     string username UK
     string nametag
     string passwordHash
+    int rating
     datetime createdAt
     datetime updatedAt
   }
@@ -67,6 +70,17 @@ erDiagram
     json payload
     datetime createdAt
   }
+
+  RatingHistory {
+    int id PK
+    int matchId FK
+    int userId FK
+    int oldRating
+    int newRating
+    int delta
+    string algorithm
+    datetime createdAt
+  }
 ```
 
 ## User
@@ -79,12 +93,14 @@ Fields:
 - `username`: unique player name.
 - `nametag`: optional display tag.
 - `passwordHash`: optional Argon2 hash for users created through auth signup.
+- `rating`: current matchmaking/ranked rating. Defaults to `1200`.
 - `createdAt`: creation timestamp.
 - `updatedAt`: update timestamp.
 
 Relationships:
 
 - Has many `MatchParticipant` rows.
+- Has many `RatingHistory` rows.
 - Has many `Session` rows.
 
 ## Session
@@ -120,6 +136,7 @@ Relationships:
 - Has many `MatchParticipant` rows.
 - Has one `GameState` row.
 - Has many `GameEvent` rows.
+- Has many `RatingHistory` rows.
 
 ## MatchParticipant
 
@@ -165,18 +182,33 @@ Fields:
 - `payload`: event payload JSON.
 - `createdAt`: creation timestamp.
 
+## RatingHistory
+
+Stores the rating delta produced for one player by one completed match.
+
+Fields:
+
+- `id`: auto-incrementing primary key.
+- `matchId`: match that produced the rating update.
+- `userId`: player whose rating changed.
+- `oldRating`: rating before the update.
+- `newRating`: rating after the update.
+- `delta`: signed rating change.
+- `algorithm`: algorithm identifier, currently `elo-v1`.
+- `createdAt`: creation timestamp.
+
+Relationships:
+
+- Belongs to one `Match`.
+- Belongs to one `User`.
+
 ## Planned Data Additions
 
 The overview calls for several durable concepts that are not modeled yet:
 
-- Player ratings.
-- Rating history.
-- Match results.
 - Queue snapshots or audit records.
 - Leaderboard projections.
 
 Suggested next Prisma additions:
 
-- Add `rating`, `ratingDeviation`, or equivalent fields to `User` or a `PlayerRating` model.
-- Add `RatingHistory` with old/new rating, delta, algorithm, and match id.
-- Add a result or winner field once match outcome semantics are defined.
+- Add rating deviation or equivalent fields if the rating algorithm moves beyond baseline ELO.

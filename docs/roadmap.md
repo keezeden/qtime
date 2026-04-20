@@ -19,11 +19,10 @@ This roadmap follows the overview while staying grounded in the current repo.
 
 ## Phase 4: Match Results and Ratings
 
-- Add result reporting endpoint.
-- Add winner/outcome fields to the data model.
-- Implement an initial ELO update algorithm.
-- Store rating history per match.
-- Add tests for expected rating deltas.
+- Decide whether terminal game events are enough for result reporting or whether a separate admin/server result endpoint is needed.
+- Add explicit winner/outcome fields to `Match` if match queries need them without joining participants.
+- Extend or tune the initial ELO update algorithm.
+- Broaden rating tests when draw, abandonment, or rematch cases exist.
 
 ## Phase 5: Player Experience
 

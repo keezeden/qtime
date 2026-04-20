@@ -169,7 +169,7 @@ Authentication is required. The client may only choose safe queue fields:
 }
 ```
 
-The API derives `userId` and `username` from the authenticated user, uses `elo: 1200` until ratings are persisted, and sets `queuedAt` server-side.
+The API derives `userId` and `username` from the authenticated user, reads the user's current rating as `elo`, and sets `queuedAt` server-side.
 
 Enqueued payload:
 
@@ -343,6 +343,7 @@ Successful response:
 ### `POST /matches/:id/events`
 
 Accepts a client-authoritative game event and advances the persisted game state when the submitted base version matches the current state version.
+When the event type is `match_finished`, the API also marks the match finished, records participant results, updates player ratings, and stores rating history.
 
 Request body:
 

@@ -88,11 +88,11 @@ Location: `apps/elo`
 
 Current status:
 
-- Placeholder for future rating service work.
+- Placeholder for future service extraction. The API currently applies the baseline ELO update when it accepts a terminal game event.
 
 Target responsibilities:
 
-- Consume match-finished events.
+- Consume match-finished events once ratings move out of the API.
 - Calculate rating deltas.
 - Persist rating history.
 - Support ELO initially, with room for Glicko or TrueSkill-style algorithms later.
@@ -117,8 +117,8 @@ sequenceDiagram
   API->>DB: insert game event and update game state
   Player->>API: GET /matches/:id/events?afterVersion=n
   API->>DB: read accepted game events
-  Player->>API: report result (planned)
-  API->>DB: persist result (planned)
+  Player->>API: POST /matches/:id/events (match_finished)
+  API->>DB: persist result and rating history
 ```
 
 ## Matchmaking Algorithm
@@ -136,4 +136,4 @@ This gives the project a clear baseline: early queue time favors fairness; longe
 ## Known Alignment Work
 
 - Broadcast accepted updates to match participants.
-- Add result reporting and rating update flows.
+- Extract rating logic into a service or package when it needs its own runtime boundary.

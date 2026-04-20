@@ -4,20 +4,25 @@ import { JoinMatchmakingDto } from "./dto/join-matchmaking.dto";
 import { EventsService } from "../events/events.service";
 import type { QueuedPlayer } from "@qtime/types";
 import type { AuthUser } from "../auth/types/auth-user";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class MatchmakingService {
-  constructor(private events: EventsService) {}
+  constructor(
+    private events: EventsService,
+    private prisma: PrismaService,
+  ) {}
 
   async queueMatchmaking(
     input: JoinMatchmakingDto,
     user: AuthUser,
   ): Promise<{ jobId: string }> {
+    const rating = await this.findUserRating(user.id);
     const payload: QueuedPlayer = {
       userId: user.id,
       username: user.username,
       region: input.region,
-      elo: 1200,
+      elo: rating,
       mode: input.mode,
       queuedAt: new Date().toISOString(),
     };
@@ -48,5 +53,16 @@ export class MatchmakingService {
     if (!job.id) throw new InternalServerErrorException("Queue player failed.");
 
     return { jobId: job.id };
+  }
+
+  private async findUserRating(userId: number): Promise<number> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { rating: true },
+    });
+
+    if (!user) throw new NotFoundException("User was not found for matchmaking.");
+
+    return user.rating;
   }
 }
