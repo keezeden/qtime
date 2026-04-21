@@ -74,6 +74,17 @@ Important types:
 - `MatchFinishedEvent`
 - `Region`
 
+### Shared Game Logic
+
+Location: `packages/game`
+
+Responsibilities:
+
+- Define word-duel game state and events.
+- Create initial games and tile bags.
+- Score words and apply pure game transitions.
+- Provide the same rules implementation to the client and game server.
+
 ### Client
 
 Location: `apps/client`
@@ -96,6 +107,24 @@ Target responsibilities:
 - Calculate rating deltas.
 - Persist rating history.
 - Support ELO initially, with room for Glicko or TrueSkill-style algorithms later.
+
+### Game Server
+
+Location: `apps/game-server`
+
+Current status:
+
+- Scaffolded with health, game creation, and WebSocket room connection endpoints.
+- Keeps active rooms in memory.
+- Not yet wired to matchmaking or the client.
+
+Target responsibilities:
+
+- Own active multiplayer game state.
+- Accept WebSocket commands from match participants.
+- Broadcast accepted snapshots/events.
+- Persist accepted events and snapshots.
+- Trigger idempotent match finish and rating finalization.
 
 ## Queue Flow
 

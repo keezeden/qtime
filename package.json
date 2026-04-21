@@ -10,6 +10,7 @@
     "dev:api:local": "npm run infra:up && npm run dev:api",
     "dev:backend": "npm run infra:up && concurrently -n api,matchmaking -c blue,magenta \"npm run dev:api\" \"npm run dev:matchmaking\"",
     "dev:client": "npm --prefix apps/client run dev",
+    "dev:game-server": "npm --prefix apps/game-server run start:dev",
     "dev:matchmaking": "node --env-file=.env scripts/run-with-root-env.mjs npm --prefix apps/matchmaking run start:dev",
     "api:generate": "node --env-file=.env scripts/run-with-root-env.mjs npm --prefix apps/api run db:generate",
     "api:migrate": "npm run infra:up && node --env-file=.env scripts/run-with-root-env.mjs npm --prefix apps/api run db:migrate",

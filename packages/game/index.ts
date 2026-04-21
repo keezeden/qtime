@@ -1,0 +1,28 @@
+export {
+  canBuildWord,
+  createGame,
+  DEFAULT_TARGET_SCORE,
+  getPlayableRackLetters,
+  MIN_WORD_LENGTH,
+  RACK_SIZE,
+  refreshRack,
+  scoreWord,
+  submitWord,
+  type GameState,
+  type MatchEvent,
+  type PlayedWord,
+  type PlayerId,
+  type PlayerState,
+  type SubmitWordResult,
+  type Tile,
+  type WordScore,
+} from "./src/word-game";
+export {
+  createId,
+  createTileBag,
+  drawTiles,
+  removeWordTiles,
+  shuffleTiles,
+  tileValues,
+  type DrawTilesResult,
+} from "./src/word-game-tiles";

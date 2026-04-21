@@ -3,7 +3,7 @@ import {
   type GameState,
   type PlayerId,
   createGame,
-} from "./word-game";
+} from "@qtime/game";
 
 const MULTIPLAYER_TEST_TARGET_SCORE = 50;
 

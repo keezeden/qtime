@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState } from "./word-game";
+import type { GameState } from "@qtime/game";
 import { RulesModal } from "./word-duel-rules-modal";
 
 type MultiplayerRulesButtonProps = {

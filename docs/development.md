@@ -100,6 +100,14 @@ Run only the API and matchmaking worker:
 npm run dev:backend
 ```
 
+Run the game server scaffold:
+
+```bash
+npm run dev:game-server
+```
+
+The game server listens on `http://localhost:3002` by default and exposes `GET /health`.
+
 ## API Development
 
 Run the NestJS API:

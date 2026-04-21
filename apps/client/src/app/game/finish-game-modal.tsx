@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchMatchHistory, type MatchHistoryItem } from "./multiplayer-api";
-import type { GameState } from "./word-game";
+import type { GameState } from "@qtime/game";
 
 type FinishGameModalProps = {
   game: GameState;

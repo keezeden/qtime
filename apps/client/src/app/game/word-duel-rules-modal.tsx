@@ -1,5 +1,5 @@
 import { RULES, SCORE_TARGET_OPTIONS } from "./word-duel-constants";
-import type { GameState } from "./word-game";
+import type { GameState } from "@qtime/game";
 
 type RulesModalProps = {
   game: GameState;

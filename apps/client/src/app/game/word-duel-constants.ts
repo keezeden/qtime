@@ -1,4 +1,4 @@
-import { DEFAULT_TARGET_SCORE } from "./word-game";
+import { DEFAULT_TARGET_SCORE } from "@qtime/game";
 
 export const SCORE_TARGET_OPTIONS = [100, 250, DEFAULT_TARGET_SCORE, 750];
 export const VISIBLE_WORD_SLOTS = 9;

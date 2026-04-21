@@ -5,6 +5,7 @@ import type { NextConfig } from "next";
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["@qtime/game"],
   turbopack: {
     root: path.resolve(dirname, "../.."),
   },

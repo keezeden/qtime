@@ -1,0 +1,10 @@
+{
+  "name": "@qtime/game",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Shared QTime word-duel game logic"
+}

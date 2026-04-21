@@ -26,8 +26,8 @@ import {
   refreshRack,
   scoreWord,
   submitWord,
-} from "./word-game";
-import { shuffleTiles } from "./word-game-tiles";
+} from "@qtime/game";
+import { shuffleTiles } from "@qtime/game";
 
 export function WordDuel(): React.ReactElement {
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);

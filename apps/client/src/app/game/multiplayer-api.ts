@@ -1,4 +1,4 @@
-import type { GameState } from "./word-game";
+import type { GameState } from "@qtime/game";
 
 export type GameEventType =
   | "game_initialized"

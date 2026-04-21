@@ -7,9 +7,9 @@ import { PlayerColumn, RackPanel, ScoreChip, WordSlots } from "./word-duel-compo
 import { VISIBLE_WORD_SLOTS } from "./word-duel-constants";
 import { GameHeader, QueuePanel, StatusMessage } from "./multiplayer-queue-panel";
 import { fetchCurrentMatch, fetchGameEvents, fetchMatchState, isGameState, joinMatchmaking, leaveMatchmaking, readEventState, submitGameState, type GameEventType, type MatchSummary } from "./multiplayer-api";
-import type { GameState, Tile } from "./word-game";
-import { refreshRack, scoreWord, submitWord } from "./word-game";
-import { shuffleTiles } from "./word-game-tiles";
+import type { GameState, Tile } from "@qtime/game";
+import { refreshRack, scoreWord, submitWord } from "@qtime/game";
+import { shuffleTiles } from "@qtime/game";
 import { createFinishedMessage, createNamedGame, createWordEventSubmission, getLocalPlayerId } from "./multiplayer-state";
 import { MultiplayerRulesButton } from "./multiplayer-rules-button";
 

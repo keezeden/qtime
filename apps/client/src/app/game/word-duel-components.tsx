@@ -1,4 +1,4 @@
-import type { GameState, PlayerId, Tile } from "./word-game";
+import type { GameState, PlayerId, Tile } from "@qtime/game";
 import { VISIBLE_WORD_SLOTS } from "./word-duel-constants";
 
 type PlayerColumnProps = {
