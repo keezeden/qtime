@@ -93,6 +93,28 @@ export class MatchPersistence {
     await this.pool.end();
   }
 
+  async cancelMatch(matchId: number, reason: string): Promise<void> {
+    await this.pool.query(
+      `
+        UPDATE "Match"
+        SET "status" = 'CANCELLED', "finishedAt" = NOW()
+        WHERE "id" = $1
+      `,
+      [matchId],
+    );
+
+    await this.pool.query(
+      `
+        UPDATE "GameState"
+        SET "status" = 'cancelled',
+            "state" = "state" || $2::jsonb,
+            "updatedAt" = NOW()
+        WHERE "matchId" = $1
+      `,
+      [matchId, JSON.stringify({ status: "cancelled", cancellationReason: reason })],
+    );
+  }
+
   private async persistPairOnce(pair: MatchmakingPair): Promise<number> {
     const client = await this.pool.connect();
 

@@ -44,6 +44,12 @@ flowchart LR
 - Persist minimal game server metadata on the match or game state record.
 - Make game creation idempotent by match id.
 
+Current state:
+
+- The worker initializes a game server room after creating the match and before removing queue jobs.
+- Failed room initialization cancels the persisted match and leaves queue jobs waiting for a later poll.
+- Game server connection metadata is logged but not yet persisted in a dedicated field.
+
 ## Phase 4: Client WebSocket Connection
 
 - Add an API endpoint that issues short-lived game join tickets for authenticated match participants.
@@ -62,3 +68,5 @@ flowchart LR
 - The game server is client-authoritative for now, matching the current product decision.
 - WebSockets should be treated as transport. Accepted events and snapshots remain the data model.
 - Join tokens should come from the API; clients should not connect to a game room using only `matchId`.
+- Future DX work should extract Prisma into a shared package so the API, matchmaking worker, and game server can share typed persistence without raw SQL.
+- Future DX work should evaluate strict runtime validation, likely Zod, for HTTP and WebSocket payloads instead of expanding manual type guards.

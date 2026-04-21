@@ -1,10 +1,26 @@
 import { MATCHMAKING_QUEUE_NAME } from "@qtime/types";
 import type { MatchmakingPair, QueuedPlayer } from "@qtime/types";
 import { Job, Queue } from "bullmq";
+import {
+  createGameInitializationRequest,
+  GameServerClient,
+  type CreateGameResponse,
+} from "./game-server-client";
 import { MatchPersistence } from "./match-persistence";
 import { getTenSecondBlocksSince } from "./utils";
 
 const POLL_INTERVAL_MS = Number(process.env.MATCHMAKING_POLL_INTERVAL_MS ?? 2000);
+const GAME_SERVER_MAX_ATTEMPTS = 3;
+const GAME_SERVER_RETRY_DELAY_MS = 500;
+const GAME_SERVER_REQUEST_TIMEOUT_MS = 5000;
+const MULTIPLAYER_TARGET_SCORE = 50;
+
+class MatchmakingConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MatchmakingConfigurationError";
+  }
+}
 
 function createQueue(): Queue<QueuedPlayer> {
   return new Queue<QueuedPlayer>(MATCHMAKING_QUEUE_NAME, {
@@ -112,19 +128,75 @@ const removeMatchedJobs = async (
   await Promise.all(matchedJobs.map((job) => job.remove()));
 };
 
+const getRequiredEnvironmentValue = (name: string): string => {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new MatchmakingConfigurationError(`${name} must be set before starting the matchmaking worker.`);
+  }
+
+  return value;
+};
+
+const createGameServerClient = (): GameServerClient =>
+  new GameServerClient({
+    baseUrl: getRequiredEnvironmentValue("GAME_SERVER_URL"),
+    maxAttempts: GAME_SERVER_MAX_ATTEMPTS,
+    retryDelayMs: GAME_SERVER_RETRY_DELAY_MS,
+    requestTimeoutMs: GAME_SERVER_REQUEST_TIMEOUT_MS,
+  });
+
+const cancelPersistedMatch = async (
+  persistence: MatchPersistence,
+  matchId: number,
+  match: MatchmakingPair,
+): Promise<void> => {
+  try {
+    await persistence.cancelMatch(matchId, "game_server_initialization_failed");
+  } catch (error) {
+    console.warn("Failed to cancel match after game server initialization failure", {
+      matchId,
+      mode: match.mode,
+      region: match.region,
+      playerUserIds: match.players.map((player) => player.userId),
+      error,
+    });
+  }
+};
+
+const initializeGameRoom = async (
+  matchId: number,
+  match: MatchmakingPair,
+  gameServerClient: GameServerClient,
+): Promise<CreateGameResponse> => {
+  const request = createGameInitializationRequest(matchId, match, MULTIPLAYER_TARGET_SCORE);
+  return gameServerClient.createGame(request);
+};
+
 const persistMatches = async (
   waitingJobs: Job<QueuedPlayer>[],
   matches: MatchmakingPair[],
   persistence: MatchPersistence,
+  gameServerClient: GameServerClient,
 ): Promise<void> => {
   for (const match of matches) {
     const matchId = await persistence.persistPair(match);
+    let game: CreateGameResponse;
+
+    try {
+      game = await initializeGameRoom(matchId, match, gameServerClient);
+    } catch (error) {
+      await cancelPersistedMatch(persistence, matchId, match);
+      throw error;
+    }
+
     await removeMatchedJobs(waitingJobs, match);
     console.log("Match persisted", {
       matchId,
       mode: match.mode,
       region: match.region,
       playerUserIds: match.players.map((player) => player.userId),
+      gameServerWebsocketPath: game.websocketPath,
     });
   }
 };
@@ -132,23 +204,25 @@ const persistMatches = async (
 const processQueue = async (
   queue: Queue<QueuedPlayer>,
   persistence: MatchPersistence,
+  gameServerClient: GameServerClient,
 ): Promise<void> => {
   const waitingJobs = await queue.getWaiting();
   const groupedQueues = groupPlayersByModeAndRegion(waitingJobs.map((job) => job.data));
   const matches = getGroupedMatches(groupedQueues);
 
-  await persistMatches(waitingJobs, matches, persistence);
+  await persistMatches(waitingJobs, matches, persistence, gameServerClient);
 };
 
 const startWorker = (): void => {
   const queue = createQueue();
   const persistence = new MatchPersistence();
+  const gameServerClient = createGameServerClient();
   let currentRun: Promise<void> | undefined;
 
   const poll = (): void => {
     if (currentRun) return;
 
-    currentRun = processQueue(queue, persistence)
+    currentRun = processQueue(queue, persistence, gameServerClient)
       .catch((error) => {
         console.error("Matchmaking poll failed:", error);
       })

@@ -5,10 +5,10 @@
   "scripts": {
     "setup:local": "npm run infra:up && npm run api:generate && npm run api:migrate",
     "dev": "npm run dev:app",
-    "dev:app": "npm run infra:up && concurrently -n api,matchmaking,client -c blue,magenta,green \"npm run dev:api\" \"npm run dev:matchmaking\" \"npm run dev:client\"",
+    "dev:app": "npm run infra:up && concurrently -n api,matchmaking,game-server,client -c blue,magenta,cyan,green \"npm run dev:api\" \"npm run dev:matchmaking\" \"npm run dev:game-server\" \"npm run dev:client\"",
     "dev:api": "npm run api:generate && npm run api:migrate && node --env-file=.env scripts/run-with-root-env.mjs npm --prefix apps/api run start:dev",
     "dev:api:local": "npm run infra:up && npm run dev:api",
-    "dev:backend": "npm run infra:up && concurrently -n api,matchmaking -c blue,magenta \"npm run dev:api\" \"npm run dev:matchmaking\"",
+    "dev:backend": "npm run infra:up && concurrently -n api,matchmaking,game-server -c blue,magenta,cyan \"npm run dev:api\" \"npm run dev:matchmaking\" \"npm run dev:game-server\"",
     "dev:client": "npm --prefix apps/client run dev",
     "dev:game-server": "npm --prefix apps/game-server run start:dev",
     "dev:matchmaking": "node --env-file=.env scripts/run-with-root-env.mjs npm --prefix apps/matchmaking run start:dev",

@@ -11,6 +11,7 @@ flowchart LR
   API --> Redis[("Redis / BullMQ")]
   Redis --> MM["apps/matchmaking worker"]
   MM --> DB
+  MM --> GameServer["apps/game-server"]
   API --> Rating["apps/elo rating service (planned)"]
   Rating --> DB
 ```
@@ -56,7 +57,9 @@ Current behavior:
 - Runs every 2 seconds outside test mode.
 - Persists matched pairs as active matches.
 - Creates participant rows, participant statistics rows, and an initial game state snapshot.
-- Removes matched BullMQ jobs after successful persistence.
+- Calls the game server to initialize a live room for the persisted match.
+- Removes matched BullMQ jobs after successful persistence and room initialization.
+- Cancels the persisted match and leaves queue jobs waiting if room initialization fails.
 
 ### Shared Types
 
@@ -116,7 +119,8 @@ Current status:
 
 - Scaffolded with health, game creation, and WebSocket room connection endpoints.
 - Keeps active rooms in memory.
-- Not yet wired to matchmaking or the client.
+- Initialized by the matchmaking worker after a durable match is created.
+- Not yet wired to the client.
 
 Target responsibilities:
 
@@ -135,12 +139,15 @@ sequenceDiagram
   participant Redis as Redis/BullMQ
   participant Worker as Matchmaking Worker
   participant DB as Postgres
+  participant GameServer as Game Server
 
   Player->>API: POST /matchmaking
   API->>Redis: enqueue player
   Worker->>Redis: poll waiting players
   Worker->>Worker: group by mode, region, and rating window
   Worker->>DB: create active match and game state
+  Worker->>GameServer: POST /games
+  GameServer-->>Worker: websocket path
   Worker->>Redis: remove matched players
   Player->>API: POST /matches/:id/events
   API->>DB: insert game event and update game state

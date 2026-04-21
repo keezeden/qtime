@@ -35,7 +35,8 @@ This roadmap follows the overview while staying grounded in the current repo.
 
 - Add structured logging.
 - Add health checks for API, Redis, Postgres, and workers.
-- Extract Prisma schema, migrations, and generated client into a shared package used by API and workers.
+- Extract Prisma schema, migrations, and generated client into a shared package used by API and workers so workers can stop using raw SQL for persistence.
+- Evaluate a strict runtime validation library such as Zod for HTTP/WebSocket payload parsing instead of hand-written object checks.
 - Add CI for lint, test, build, and Docker image validation.
 - Add metrics for queue size, wait time, match quality, match creation rate, and worker failures.
 - Add deployment documentation for a target cloud environment.

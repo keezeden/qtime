@@ -20,6 +20,8 @@ POSTGRES_HOST
 POSTGRES_PORT
 REDIS_HOST
 REDIS_PORT
+GAME_SERVER_URL
+GAME_SERVER_PORT
 ```
 
 For local host-based development, `POSTGRES_HOST` and `REDIS_HOST` should usually be `localhost`.
@@ -80,13 +82,13 @@ The default local flow is a hybrid setup:
 - Node runs the API, matchmaking worker, and client from the host.
 - Root scripts load `.env` once and pass that environment into app package scripts.
 
-Run the API, worker, and client together:
+Run the API, worker, game server, and client together:
 
 ```bash
 npm run dev:app
 ```
 
-This starts the API on `http://localhost:3000` and the client on `http://localhost:3001`.
+This starts the API on `http://localhost:3000`, the game server on `http://localhost:3002`, and the client on `http://localhost:3001`.
 
 Run the API with local infrastructure:
 
@@ -94,7 +96,7 @@ Run the API with local infrastructure:
 npm run dev:api:local
 ```
 
-Run only the API and matchmaking worker:
+Run only the API, matchmaking worker, and game server:
 
 ```bash
 npm run dev:backend
@@ -106,7 +108,7 @@ Run the game server scaffold:
 npm run dev:game-server
 ```
 
-The game server listens on `http://localhost:3002` by default and exposes `GET /health`.
+The game server listens on `GAME_SERVER_PORT` and exposes `GET /health`. The matchmaking worker calls `GAME_SERVER_URL` after creating a durable match row.
 
 ## API Development
 
@@ -162,7 +164,7 @@ Build and start the full stack:
 npm run stack:up
 ```
 
-Containerized services need container-reachable environment values. Use `db` for Postgres and `redis` for Redis when the API or worker runs inside Compose.
+Containerized services need container-reachable environment values. Use `db` for Postgres, `redis` for Redis, and `http://game-server:3002` for `GAME_SERVER_URL` when services run inside Compose.
 
 Stop the full stack:
 

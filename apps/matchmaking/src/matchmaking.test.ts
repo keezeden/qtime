@@ -1,4 +1,5 @@
-import { QueuedPlayer } from "@qtime/types";
+import type { QueuedPlayer } from "@qtime/types";
+import { createGameInitializationRequest } from "./game-server-client";
 import { findMatches, getGroupedMatches, groupPlayersByModeAndRegion } from "./matchmaking";
 
 function makePlayer(input: {
@@ -194,5 +195,48 @@ describe("getGroupedMatches", () => {
     const matches = getGroupedMatches(groupPlayersByModeAndRegion(players));
 
     expect(matches).toEqual([]);
+  });
+});
+
+describe("createGameInitializationRequest", () => {
+  it("maps matched players into deterministic game seats", () => {
+    const players: [QueuedPlayer, QueuedPlayer] = [
+      makePlayer({
+        userId: 10,
+        username: "first",
+        region: "oce",
+        elo: 1200,
+        queuedAt: "2026-01-01T00:00:00.000Z",
+        mode: "word-duel",
+      }),
+      makePlayer({
+        userId: 20,
+        username: "second",
+        region: "oce",
+        elo: 1210,
+        queuedAt: "2026-01-01T00:00:01.000Z",
+        mode: "word-duel",
+      }),
+    ];
+
+    const request = createGameInitializationRequest(
+      123,
+      {
+        mode: "word-duel",
+        region: "oce",
+        players,
+        matchedAt: "2026-01-01T00:00:02.000Z",
+      },
+      50,
+    );
+
+    expect(request).toEqual({
+      matchId: 123,
+      targetScore: 50,
+      participants: [
+        { userId: 10, seat: 0, username: "first" },
+        { userId: 20, seat: 1, username: "second" },
+      ],
+    });
   });
 });
