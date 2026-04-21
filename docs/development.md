@@ -109,6 +109,7 @@ npm run dev:api
 ```
 
 The root API script generates Prisma artifacts, applies deployed migrations, then starts the API in watch mode with the root `.env` loaded.
+The root migration scripts start local Docker infrastructure before running Prisma, so direct migration commands can be used from a cold local environment.
 
 Useful API commands:
 
