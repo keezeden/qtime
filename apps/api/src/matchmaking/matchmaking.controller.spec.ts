@@ -17,6 +17,7 @@ describe('MatchmakingController', () => {
           provide: EventsService,
           useValue: {
             pushMatchmaking: jest.fn(),
+            removeMatchmakingJob: jest.fn(),
           },
         },
         {

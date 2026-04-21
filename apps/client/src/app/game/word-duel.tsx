@@ -286,6 +286,7 @@ export function WordDuel(): React.ReactElement {
           game={game}
           onClose={() => setIsModalOpen(false)}
           onNewMatch={handleNewMatch}
+          showTargetControls={true}
           targetScore={targetScore}
         />
       ) : null}

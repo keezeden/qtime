@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { DevJoinMatchmakingDto } from "./dto/dev-join-matchmaking.dto";
 import { JoinMatchmakingDto } from "./dto/join-matchmaking.dto";
+import { LeaveMatchmakingDto } from "./dto/leave-matchmaking.dto";
 import { EventsService } from "../events/events.service";
 import type { QueuedPlayer } from "@qtime/types";
 import type { AuthUser } from "../auth/types/auth-user";
@@ -45,6 +46,12 @@ export class MatchmakingService {
     };
 
     return await this.enqueuePlayer(payload);
+  }
+
+  async leaveMatchmaking(input: LeaveMatchmakingDto, user: AuthUser): Promise<{ removed: boolean }> {
+    const removed = await this.events.removeMatchmakingJob(input.jobId, user.id);
+
+    return { removed };
   }
 
   private async enqueuePlayer(payload: QueuedPlayer): Promise<{ jobId: string }> {

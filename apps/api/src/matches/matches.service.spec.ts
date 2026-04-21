@@ -82,7 +82,7 @@ describe('MatchesService', () => {
   it('returns the current active match for a participant', async () => {
     prisma.match.findFirst.mockResolvedValue(makeMatch());
 
-    await expect(service.findCurrent(1)).resolves.toEqual({
+    await expect(service.findCurrent(1, {})).resolves.toEqual({
       match: {
         id: 1,
         mode: 'word-duel',
@@ -122,7 +122,22 @@ describe('MatchesService', () => {
   it('returns null when the participant has no active match', async () => {
     prisma.match.findFirst.mockResolvedValue(null);
 
-    await expect(service.findCurrent(1)).resolves.toEqual({ match: null });
+    await expect(service.findCurrent(1, {})).resolves.toEqual({ match: null });
+  });
+
+  it('filters current matches by startedAfter when provided', async () => {
+    prisma.match.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.findCurrent(1, { startedAfter: '2026-01-01T00:00:00.000Z' }),
+    ).resolves.toEqual({ match: null });
+    expect(prisma.match.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          startedAt: { gte: new Date('2026-01-01T00:00:00.000Z') },
+        }),
+      }),
+    );
   });
 
   it('rejects match reads for non-participants', async () => {

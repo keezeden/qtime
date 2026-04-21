@@ -1,13 +1,14 @@
 import type { GameEventType, MatchSummary } from "./multiplayer-api";
 import {
-  DEFAULT_TARGET_SCORE,
   type GameState,
   type PlayerId,
   createGame,
 } from "./word-game";
 
+const MULTIPLAYER_TEST_TARGET_SCORE = 50;
+
 export function createNamedGame(match: MatchSummary): GameState {
-  const game = createGame(DEFAULT_TARGET_SCORE);
+  const game = createGame(MULTIPLAYER_TEST_TARGET_SCORE);
   const names = Object.fromEntries(
     match.matchParticipants.map((participant) => [
       participant.seat,
@@ -74,4 +75,11 @@ export function createWordEventSubmission(
       winnerUserId: state.winnerId ? getUserIdForPlayerId(match, state.winnerId) : null,
     },
   };
+}
+
+export function createFinishedMessage(state: GameState): string {
+  if (state.status !== "finished" || !state.winnerId) return "";
+
+  const winner = state.players[state.winnerId];
+  return `${winner.name} wins with ${winner.score} points.`;
 }

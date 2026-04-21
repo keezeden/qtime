@@ -192,6 +192,26 @@ Successful response:
 }
 ```
 
+### `POST /matchmaking/leave`
+
+Cancel a queued matchmaking job owned by the authenticated user. Authentication is required.
+
+Request body:
+
+```json
+{
+  "jobId": "..."
+}
+```
+
+Successful response:
+
+```json
+{
+  "removed": true
+}
+```
+
 ### `POST /matchmaking/dev`
 
 Development-only endpoint for enqueueing synthetic players. In production this route returns `404`.
@@ -225,6 +245,13 @@ Match endpoints require authentication and only return matches where the authent
 ### `GET /matches/current`
 
 Returns the latest active match for the authenticated user, or `null` when they are not in an active match.
+When queueing for a new match, clients can pass `startedAfter` as an ISO timestamp to ignore older active matches from previous sessions.
+
+Example:
+
+```text
+GET /matches/current?startedAfter=2026-04-21T00:00:00.000Z
+```
 
 Successful response:
 

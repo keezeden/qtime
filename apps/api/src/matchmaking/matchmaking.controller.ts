@@ -5,6 +5,7 @@ import { AccessTokenGuard } from "../auth/guards/access-token.guard";
 import type { AuthUser } from "../auth/types/auth-user";
 import { DevJoinMatchmakingDto } from "./dto/dev-join-matchmaking.dto";
 import { JoinMatchmakingDto } from "./dto/join-matchmaking.dto";
+import { LeaveMatchmakingDto } from "./dto/leave-matchmaking.dto";
 
 @Controller("matchmaking")
 export class MatchmakingController {
@@ -22,5 +23,14 @@ export class MatchmakingController {
   @Post("dev")
   createDev(@Body() devJoinMatchmakingDto: DevJoinMatchmakingDto): Promise<{ jobId: string }> {
     return this.matchmakingService.queueDevMatchmaking(devJoinMatchmakingDto);
+  }
+
+  @Post("leave")
+  @UseGuards(AccessTokenGuard)
+  leave(
+    @Body() leaveMatchmakingDto: LeaveMatchmakingDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ removed: boolean }> {
+    return this.matchmakingService.leaveMatchmaking(leaveMatchmakingDto, user);
   }
 }

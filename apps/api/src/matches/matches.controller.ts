@@ -3,6 +3,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { AccessTokenGuard } from '../auth/guards/access-token.guard';
 import type { AuthUser } from '../auth/types/auth-user';
 import { CreateGameEventDto } from './dto/create-game-event.dto';
+import { FindCurrentMatchDto } from './dto/find-current-match.dto';
 import { ListGameEventsDto } from './dto/list-game-events.dto';
 import { MatchesService } from './matches.service';
 import type {
@@ -19,8 +20,11 @@ export class MatchesController {
   constructor(private readonly matchesService: MatchesService) {}
 
   @Get('current')
-  current(@CurrentUser() user: AuthUser): Promise<CurrentMatchResponse> {
-    return this.matchesService.findCurrent(user.id);
+  current(
+    @CurrentUser() user: AuthUser,
+    @Query() query: FindCurrentMatchDto,
+  ): Promise<CurrentMatchResponse> {
+    return this.matchesService.findCurrent(user.id, query);
   }
 
   @Get(':id')

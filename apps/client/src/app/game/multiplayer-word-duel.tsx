@@ -1,25 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { AuthUser } from "@/app/lib/auth";
 import { PlayerColumn, RackPanel, ScoreChip, WordSlots } from "./word-duel-components";
 import { VISIBLE_WORD_SLOTS } from "./word-duel-constants";
 import { GameHeader, QueuePanel, StatusMessage } from "./multiplayer-queue-panel";
-import {
-  fetchCurrentMatch,
-  fetchGameEvents,
-  fetchMatchState,
-  isGameState,
-  joinMatchmaking,
-  readEventState,
-  submitGameState,
-  type GameEventType,
-  type MatchSummary,
-} from "./multiplayer-api";
+import { fetchCurrentMatch, fetchGameEvents, fetchMatchState, isGameState, joinMatchmaking, leaveMatchmaking, readEventState, submitGameState, type GameEventType, type MatchSummary } from "./multiplayer-api";
 import type { GameState, Tile } from "./word-game";
 import { refreshRack, scoreWord, submitWord } from "./word-game";
 import { shuffleTiles } from "./word-game-tiles";
-import { createNamedGame, createWordEventSubmission, getLocalPlayerId } from "./multiplayer-state";
+import { createFinishedMessage, createNamedGame, createWordEventSubmission, getLocalPlayerId } from "./multiplayer-state";
+import { MultiplayerRulesButton } from "./multiplayer-rules-button";
 
 type Props = {
   user: AuthUser;
@@ -31,9 +22,11 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   const [queueStatus, setQueueStatus] = useState<QueueStatus>("idle");
   const [match, setMatch] = useState<MatchSummary | null>(null);
   const [game, setGame] = useState<GameState | null>(null);
+  const [queuedAfter, setQueuedAfter] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
   const [message, setMessage] = useState("");
+  const queueJobIdRef = useRef<string | null>(null);
   const localPlayerId = useMemo(() => getLocalPlayerId(match, user.id), [match, user.id]);
   const currentPlayer = game ? game.players[game.currentPlayerId] : null;
   const rackPlayer = game && localPlayerId ? game.players[localPlayerId] : currentPlayer;
@@ -44,14 +37,18 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
 
   useEffect(() => {
     void startMatchmaking();
+
+    return () => {
+      void leaveCurrentQueue();
+    };
   }, []);
 
   useEffect(() => {
     if (queueStatus !== "queued") return;
 
-    const interval = window.setInterval(() => void refreshCurrentMatch(), 2000);
+    const interval = window.setInterval(() => void refreshCurrentMatch(queuedAfter), 2000);
     return () => window.clearInterval(interval);
-  }, [queueStatus]);
+  }, [queueStatus, queuedAfter]);
 
   useEffect(() => {
     if (!match) return;
@@ -91,11 +88,12 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     setSelectedTiles([]);
   }, []);
 
-  async function refreshCurrentMatch(): Promise<void> {
-    const currentMatch = await fetchCurrentMatch();
+  async function refreshCurrentMatch(startedAfter: string | null): Promise<void> {
+    const currentMatch = await fetchCurrentMatch(startedAfter);
 
     if (!currentMatch) return;
 
+    queueJobIdRef.current = null;
     setMatch(currentMatch);
     setQueueStatus("matched");
     await loadMatchState(currentMatch);
@@ -126,30 +124,33 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
       setGame(latestState);
       setVersion(latestEvent.version);
       clearSelectedTiles();
-      setMessage("");
+      setMessage(createFinishedMessage(latestState));
     }
-  }
-
-  async function handleQueue(): Promise<void> {
-    await startMatchmaking();
   }
 
   async function startMatchmaking(): Promise<void> {
     if (queueStatus === "queued" || queueStatus === "matched") return;
 
+    const startedAfter = new Date().toISOString();
+    setMatch(null);
+    setGame(null);
+    setVersion(0);
+    setQueuedAfter(startedAfter);
     setQueueStatus("queued");
     setMessage("Searching for an opponent in OCE.");
-    const currentMatch = await fetchCurrentMatch();
 
-    if (currentMatch) {
-      setMatch(currentMatch);
-      setQueueStatus("matched");
-      await loadMatchState(currentMatch);
-      return;
-    }
+    const queue = await joinMatchmaking();
+    queueJobIdRef.current = queue.jobId;
+    await refreshCurrentMatch(startedAfter);
+  }
 
-    await joinMatchmaking();
-    await refreshCurrentMatch();
+  async function leaveCurrentQueue(): Promise<void> {
+    const queueJobId = queueJobIdRef.current;
+
+    if (!queueJobId) return;
+
+    queueJobIdRef.current = null;
+    await leaveMatchmaking(queueJobId);
   }
 
   async function publishState(
@@ -181,6 +182,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
 
     await publishState(match.id, version, event.type, event.payload, result.state);
     clearSelectedTiles();
+    setMessage(createFinishedMessage(result.state));
   }
 
   async function handleRefreshRack(): Promise<void> {
@@ -256,7 +258,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     <main className="flex min-h-screen flex-col overflow-hidden px-4 py-5 sm:px-6">
       <GameHeader />
       {!match || !game || !currentPlayer || !rackPlayer ? (
-        <QueuePanel message={message} onQueue={() => void handleQueue()} status={queueStatus} />
+        <QueuePanel message={message} onQueue={() => void startMatchmaking()} status={queueStatus} />
       ) : (
         <section className="grid w-full flex-1 grid-rows-[auto_1fr_auto] gap-5 py-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(150px,12vw)_1fr_minmax(150px,12vw)] lg:items-start">
@@ -280,17 +282,14 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
           </section>
           <section className="mx-auto grid w-full max-w-7xl gap-4">
             <RackPanel
-              onRefresh={() => void handleRefreshRack()}
-              onShuffle={() => void handleShuffleRack()}
-              onSubmit={() => void commitWord()}
+              onRefresh={() => void handleRefreshRack()} onShuffle={() => void handleShuffleRack()} onSubmit={() => void commitWord()}
               onTileClick={addTileToWord}
-              selectedTileIds={selectedTileIds}
-              player={rackPlayer}
-              status={isLocalTurn ? game.status : "finished"}
+              selectedTileIds={selectedTileIds} player={rackPlayer} status={isLocalTurn ? game.status : "finished"}
             />
           </section>
         </section>
       )}
+      {game ? <MultiplayerRulesButton game={game} /> : null}
     </main>
   );
 }

@@ -13,6 +13,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   return toJsonResponse(upstream);
 }
 
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  const upstream = await fetch(`${API_URL}/matchmaking/leave`, {
+    method: "POST",
+    headers: createForwardHeaders(request, true),
+    body: await request.text(),
+    cache: "no-store",
+  });
+
+  return toJsonResponse(upstream);
+}
+
 function createForwardHeaders(
   request: NextRequest,
   includeContentType: boolean,

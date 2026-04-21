@@ -5,6 +5,7 @@ type RulesModalProps = {
   game: GameState;
   onClose: () => void;
   onNewMatch: (targetScore: number) => void;
+  showTargetControls: boolean;
   targetScore: number;
 };
 
@@ -12,6 +13,7 @@ export function RulesModal({
   game,
   onClose,
   onNewMatch,
+  showTargetControls,
   targetScore,
 }: RulesModalProps): React.ReactElement {
   return (
@@ -49,27 +51,29 @@ export function RulesModal({
           ))}
         </div>
 
-        <div className="mt-6 border-2 border-border bg-surface p-4">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-accent-teal">
-            Target Score
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {SCORE_TARGET_OPTIONS.map((option) => (
-              <button
-                className={`font-display border-2 px-3 py-3 text-sm font-bold uppercase ${
-                  targetScore === option
-                    ? "border-accent-yellow bg-accent-yellow text-[#151100]"
-                    : "border-border bg-background text-muted"
-                }`}
-                key={option}
-                onClick={() => onNewMatch(option)}
-                type="button"
-              >
-                {option}
-              </button>
-            ))}
+        {showTargetControls ? (
+          <div className="mt-6 border-2 border-border bg-surface p-4">
+            <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-accent-teal">
+              Target Score
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {SCORE_TARGET_OPTIONS.map((option) => (
+                <button
+                  className={`font-display border-2 px-3 py-3 text-sm font-bold uppercase ${
+                    targetScore === option
+                      ? "border-accent-yellow bg-accent-yellow text-[#151100]"
+                      : "border-border bg-background text-muted"
+                  }`}
+                  key={option}
+                  onClick={() => onNewMatch(option)}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="mt-6 border-2 border-border bg-surface p-4">
           <div className="flex items-center justify-between gap-4">

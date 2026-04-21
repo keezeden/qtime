@@ -5,12 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 
 describe('MatchmakingService', () => {
   let service: MatchmakingService;
-  let eventsService: { pushMatchmaking: jest.Mock };
+  let eventsService: { pushMatchmaking: jest.Mock; removeMatchmakingJob: jest.Mock };
   let prismaService: { user: { findUnique: jest.Mock } };
 
   beforeEach(async () => {
     eventsService = {
       pushMatchmaking: jest.fn().mockResolvedValue({ id: 'job-1' }),
+      removeMatchmakingJob: jest.fn().mockResolvedValue(true),
     };
     prismaService = {
       user: {
@@ -109,5 +110,12 @@ describe('MatchmakingService', () => {
     ).rejects.toThrow('Dev matchmaking endpoint is unavailable in production.');
     expect(eventsService.pushMatchmaking).not.toHaveBeenCalled();
 
+  });
+
+  it('should remove a queued matchmaking job', async () => {
+    await expect(
+      service.leaveMatchmaking({ jobId: 'job-1' }, { id: 42, username: 'keez', nametag: null }),
+    ).resolves.toEqual({ removed: true });
+    expect(eventsService.removeMatchmakingJob).toHaveBeenCalledWith('job-1', 42);
   });
 });

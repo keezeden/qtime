@@ -12,4 +12,18 @@ export class EventsService {
   async pushMatchmaking(payload: QueuedPlayer, options?: JobsOptions): Promise<Job<QueuedPlayer>> {
     return await this.matchmakingQueue.add(MATCHMAKING_QUEUED_JOB_NAME, payload, options);
   }
+
+  async removeMatchmakingJob(jobId: string, userId: number): Promise<boolean> {
+    const job = await this.matchmakingQueue.getJob(jobId);
+
+    if (!job) return false;
+    if (job.data.userId !== userId) return false;
+
+    const state = await job.getState();
+
+    if (state === 'active') return false;
+
+    await job.remove();
+    return true;
+  }
 }

@@ -3,6 +3,7 @@ import { MatchStatus } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateGameEventDto } from './dto/create-game-event.dto';
+import type { FindCurrentMatchDto } from './dto/find-current-match.dto';
 import type { ListGameEventsDto } from './dto/list-game-events.dto';
 import { GAME_EVENT_TYPES, type GameEventType } from './game-event-types';
 import { finishMatch } from './match-finalization';
@@ -62,10 +63,12 @@ type GameEventRecord = Prisma.GameEventGetPayload<{ select: typeof gameEventSele
 export class MatchesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findCurrent(userId: number): Promise<CurrentMatchResponse> {
+  async findCurrent(userId: number, query: FindCurrentMatchDto): Promise<CurrentMatchResponse> {
+    const startedAfter = this.parseStartedAfter(query);
     const match = await this.prisma.match.findFirst({
       where: {
         status: MatchStatus.ACTIVE,
+        ...(startedAfter ? { startedAt: { gte: startedAfter } } : {}),
         matchParticipants: {
           some: { userId },
         },
@@ -75,6 +78,10 @@ export class MatchesService {
     });
 
     return { match: match ? this.serializeMatch(match) : null };
+  }
+
+  private parseStartedAfter(query: FindCurrentMatchDto): Date | null {
+    return query.startedAfter ? new Date(query.startedAfter) : null;
   }
 
   async findOne(matchId: number, userId: number): Promise<MatchResponse> {

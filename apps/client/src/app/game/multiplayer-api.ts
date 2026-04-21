@@ -58,15 +58,28 @@ type GameEventAcceptedResponse = {
   state: GameStateEnvelope;
 };
 
-export async function joinMatchmaking(): Promise<void> {
-  await apiFetch("/api/matchmaking", {
+type JoinMatchmakingResponse = {
+  jobId: string;
+};
+
+export async function joinMatchmaking(): Promise<JoinMatchmakingResponse> {
+  return await apiFetch<JoinMatchmakingResponse>("/api/matchmaking", {
     method: "POST",
     body: JSON.stringify({ region: "oce", mode: "word-duel" }),
   });
 }
 
-export async function fetchCurrentMatch(): Promise<MatchSummary | null> {
-  const body = await apiFetch<CurrentMatchResponse>("/api/matches/current", {
+export async function leaveMatchmaking(jobId: string): Promise<void> {
+  await apiFetch("/api/matchmaking", {
+    method: "DELETE",
+    body: JSON.stringify({ jobId }),
+    keepalive: true,
+  });
+}
+
+export async function fetchCurrentMatch(startedAfter: string | null): Promise<MatchSummary | null> {
+  const query = startedAfter ? `?startedAfter=${encodeURIComponent(startedAfter)}` : "";
+  const body = await apiFetch<CurrentMatchResponse>(`/api/matches/current${query}`, {
     method: "GET",
   });
   return body.match;
