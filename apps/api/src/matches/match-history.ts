@@ -1,5 +1,6 @@
 import { MatchResult } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
+import { z } from 'zod';
 import type {
   MatchHistoryItemResponse,
   MatchHistorySummaryResponse,
@@ -31,6 +32,17 @@ export const historyMatchSelect = {
 } as const;
 
 type HistoryMatchRecord = Prisma.MatchGetPayload<{ select: typeof historyMatchSelect }>;
+
+const playerScoreSchema = z.object({
+  score: z.number(),
+});
+
+const finalScoresStateSchema = z.object({
+  players: z.object({
+    'player-one': playerScoreSchema.optional(),
+    'player-two': playerScoreSchema.optional(),
+  }),
+});
 
 export function createHistorySummary(
   rating: number,
@@ -69,18 +81,11 @@ export function serializeHistoryMatch(match: HistoryMatchRecord, userId: number)
 }
 
 function readFinalScores(state: Prisma.JsonValue | undefined): Record<number, number | null> | null {
-  if (!isRecord(state) || !isRecord(state.players)) return null;
+  const result = finalScoresStateSchema.safeParse(state);
+  if (!result.success) return null;
 
   return {
-    0: readPlayerScore(state.players['player-one']),
-    1: readPlayerScore(state.players['player-two']),
+    0: result.data.players['player-one']?.score ?? null,
+    1: result.data.players['player-two']?.score ?? null,
   };
-}
-
-function readPlayerScore(player: unknown): number | null {
-  return isRecord(player) && typeof player.score === 'number' ? player.score : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }

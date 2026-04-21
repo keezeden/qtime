@@ -355,12 +355,26 @@ Successful response:
       "mode": "word-duel",
       "region": "oce",
       "status": "active",
-      "players": []
+      "players": [],
+      "gameServer": {
+        "httpUrl": "http://localhost:3002",
+        "websocketPath": "/games/1/connect",
+        "websocketUrl": "ws://localhost:3002/games/1/connect",
+        "version": 0
+      }
+    },
+    "gameConnection": {
+      "httpUrl": "http://localhost:3002",
+      "websocketPath": "/games/1/connect",
+      "websocketUrl": "ws://localhost:3002/games/1/connect",
+      "version": 0
     },
     "updatedAt": "2026-04-20T00:00:02.000Z"
   }
 }
 ```
+
+`gameConnection` is `null` for older matches that were created before game-server room initialization metadata was persisted.
 
 Returns `404` when the match does not exist, the authenticated user is not a participant, or the match has no persisted state.
 
@@ -449,6 +463,7 @@ Successful response:
         "2": 0
       }
     },
+    "gameConnection": null,
     "updatedAt": "2026-04-20T00:00:03.000Z"
   }
 }

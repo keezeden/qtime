@@ -48,7 +48,8 @@ Current state:
 
 - The worker initializes a game server room after creating the match and before removing queue jobs.
 - Failed room initialization cancels the persisted match and leaves queue jobs waiting for a later poll.
-- Game server connection metadata is logged but not yet persisted in a dedicated field.
+- Game server connection metadata is persisted in the existing game state JSON and exposed through the state response.
+- Dedicated schema fields can replace the JSON metadata when Prisma moves into a shared package.
 
 ## Phase 4: Client WebSocket Connection
 

@@ -1,5 +1,6 @@
 import type { MatchmakingPair, QueuedPlayer } from "@qtime/types";
 import { Pool, PoolClient } from "pg";
+import type { GameServerConnection } from "./game-server-client";
 import { getDatabaseUrl } from "./database-url";
 
 type InitialGameState = {
@@ -13,6 +14,7 @@ type InitialGameState = {
     seat: number;
   }[];
   createdAt: string;
+  gameServer?: GameServerConnection;
 };
 
 const MAX_ATTEMPTS = 3;
@@ -112,6 +114,21 @@ export class MatchPersistence {
         WHERE "matchId" = $1
       `,
       [matchId, JSON.stringify({ status: "cancelled", cancellationReason: reason })],
+    );
+  }
+
+  async saveGameServerConnection(
+    matchId: number,
+    connection: GameServerConnection,
+  ): Promise<void> {
+    await this.pool.query(
+      `
+        UPDATE "GameState"
+        SET "state" = "state" || $2::jsonb,
+            "updatedAt" = NOW()
+        WHERE "matchId" = $1
+      `,
+      [matchId, JSON.stringify({ gameServer: connection })],
     );
   }
 

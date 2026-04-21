@@ -21,6 +21,7 @@ POSTGRES_PORT
 REDIS_HOST
 REDIS_PORT
 GAME_SERVER_URL
+GAME_SERVER_PUBLIC_URL
 GAME_SERVER_PORT
 ```
 
@@ -108,7 +109,7 @@ Run the game server scaffold:
 npm run dev:game-server
 ```
 
-The game server listens on `GAME_SERVER_PORT` and exposes `GET /health`. The matchmaking worker calls `GAME_SERVER_URL` after creating a durable match row.
+The game server listens on `GAME_SERVER_PORT` and exposes `GET /health`. The matchmaking worker calls `GAME_SERVER_URL` after creating a durable match row and stores browser-facing connection metadata from `GAME_SERVER_PUBLIC_URL`.
 
 ## API Development
 
@@ -164,7 +165,7 @@ Build and start the full stack:
 npm run stack:up
 ```
 
-Containerized services need container-reachable environment values. Use `db` for Postgres, `redis` for Redis, and `http://game-server:3002` for `GAME_SERVER_URL` when services run inside Compose.
+Containerized services need container-reachable environment values. Use `db` for Postgres, `redis` for Redis, `http://game-server:3002` for `GAME_SERVER_URL`, and a browser-reachable origin such as `http://localhost:3002` for `GAME_SERVER_PUBLIC_URL` when services run inside Compose.
 
 Stop the full stack:
 

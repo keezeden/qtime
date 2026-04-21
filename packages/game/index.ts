@@ -26,3 +26,11 @@ export {
   tileValues,
   type DrawTilesResult,
 } from "./src/word-game-tiles";
+export {
+  gameStateSchema,
+  matchEventSchema,
+  playedWordSchema,
+  playerIdSchema,
+  playerStateSchema,
+  tileSchema,
+} from "./src/word-game-schemas";

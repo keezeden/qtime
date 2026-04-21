@@ -18,7 +18,8 @@
     "@qtime/types": "*",
     "bullmq": "^5.71.1",
     "dotenv-cli": "^11.0.0",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

@@ -1,4 +1,5 @@
 import type { MatchmakingPair } from "@qtime/types";
+import { z } from "zod";
 
 const JSON_CONTENT_TYPE = "application/json";
 
@@ -17,6 +18,13 @@ export type CreateGameRequest = {
 export type CreateGameResponse = {
   matchId: number;
   websocketPath: string;
+  version: number;
+};
+
+export type GameServerConnection = {
+  httpUrl: string;
+  websocketPath: string;
+  websocketUrl: string;
   version: number;
 };
 
@@ -46,6 +54,12 @@ export class GameServerRequestError extends Error {
   }
 }
 
+const createGameResponseSchema = z.object({
+  matchId: z.number(),
+  websocketPath: z.string(),
+  version: z.number(),
+});
+
 export const createGameInitializationRequest = (
   matchId: number,
   pair: MatchmakingPair,
@@ -66,6 +80,21 @@ export const createGameInitializationRequest = (
     },
   ],
 });
+
+export const createGameServerConnection = (
+  publicBaseUrl: string,
+  response: CreateGameResponse,
+): GameServerConnection => {
+  const httpUrl = publicBaseUrl.replace(/\/$/, "");
+  const websocketUrl = createWebsocketUrl(httpUrl, response.websocketPath);
+
+  return {
+    httpUrl,
+    websocketPath: response.websocketPath,
+    websocketUrl,
+    version: response.version,
+  };
+};
 
 export class GameServerClient {
   private readonly config: GameServerClientConfig;
@@ -156,26 +185,19 @@ const parseCreateGameResponse = (url: string, responseBody: string): CreateGameR
     });
   }
 
-  if (!isCreateGameResponse(value)) {
+  const result = createGameResponseSchema.safeParse(value);
+
+  if (!result.success) {
     throw new GameServerRequestError("Game server returned an invalid create-game response.", {
       url,
       method: "POST",
       responseBody,
+      errorMessage: result.error.message,
     });
   }
 
-  return value;
+  return result.data;
 };
-
-const isCreateGameResponse = (value: unknown): value is CreateGameResponse =>
-  typeof value === "object" &&
-  value !== null &&
-  "matchId" in value &&
-  typeof value.matchId === "number" &&
-  "websocketPath" in value &&
-  typeof value.websocketPath === "string" &&
-  "version" in value &&
-  typeof value.version === "number";
 
 const toGameServerRequestError = (error: unknown): GameServerRequestError => {
   if (error instanceof GameServerRequestError) return error;
@@ -185,6 +207,12 @@ const toGameServerRequestError = (error: unknown): GameServerRequestError => {
     method: "POST",
     errorMessage: error instanceof Error ? error.message : String(error),
   });
+};
+
+const createWebsocketUrl = (httpUrl: string, websocketPath: string): string => {
+  const url = new URL(websocketPath, httpUrl);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return url.toString();
 };
 
 const delay = async (milliseconds: number): Promise<void> =>

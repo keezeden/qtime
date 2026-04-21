@@ -3,6 +3,7 @@ import type { MatchmakingPair, QueuedPlayer } from "@qtime/types";
 import { Job, Queue } from "bullmq";
 import {
   createGameInitializationRequest,
+  createGameServerConnection,
   GameServerClient,
   type CreateGameResponse,
 } from "./game-server-client";
@@ -146,6 +147,9 @@ const createGameServerClient = (): GameServerClient =>
     requestTimeoutMs: GAME_SERVER_REQUEST_TIMEOUT_MS,
   });
 
+const getGameServerPublicUrl = (): string =>
+  process.env.GAME_SERVER_PUBLIC_URL ?? getRequiredEnvironmentValue("GAME_SERVER_URL");
+
 const cancelPersistedMatch = async (
   persistence: MatchPersistence,
   matchId: number,
@@ -185,6 +189,10 @@ const persistMatches = async (
 
     try {
       game = await initializeGameRoom(matchId, match, gameServerClient);
+      await persistence.saveGameServerConnection(
+        matchId,
+        createGameServerConnection(getGameServerPublicUrl(), game),
+      );
     } catch (error) {
       await cancelPersistedMatch(persistence, matchId, match);
       throw error;

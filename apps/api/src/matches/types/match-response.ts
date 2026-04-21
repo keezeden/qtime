@@ -1,5 +1,6 @@
 import type { MatchResult, MatchStatus } from '../../generated/prisma/enums';
 import type { Prisma } from '../../generated/prisma/client';
+import type { GameConnectionResponse } from '../game-connection';
 import type { GameEventType } from '../game-event-types';
 
 export type MatchParticipantResponse = {
@@ -26,6 +27,7 @@ export type GameStateResponse = {
   version: number;
   status: string;
   state: Prisma.JsonValue;
+  gameConnection: GameConnectionResponse | null;
   updatedAt: string;
 };
 

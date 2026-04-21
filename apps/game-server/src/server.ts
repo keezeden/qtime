@@ -2,21 +2,29 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { URL } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
 import { createGame, type GameState } from "@qtime/game";
+import { z } from "zod";
 
 const port = Number.parseInt(process.env.GAME_SERVER_PORT ?? "3002", 10);
 const rooms = new Map<number, GameRoom>();
 
-type GameParticipant = {
-  userId: number;
-  seat: number;
-  username: string;
-};
+const gameParticipantSchema = z.object({
+  userId: z.number().int(),
+  seat: z.number().int(),
+  username: z.string(),
+});
 
-type CreateGameRequest = {
-  matchId: number;
-  targetScore: number;
-  participants: [GameParticipant, GameParticipant];
-};
+const createGameRequestSchema = z.object({
+  matchId: z.number().int(),
+  targetScore: z.number().int().positive(),
+  participants: z.tuple([gameParticipantSchema, gameParticipantSchema]),
+});
+
+const socketMessageSchema = z.object({
+  type: z.string(),
+});
+
+type GameParticipant = z.infer<typeof gameParticipantSchema>;
+type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
 
 type GameRoom = {
   matchId: number;
@@ -64,8 +72,18 @@ async function handleHttpRequest(request: IncomingMessage, response: ServerRespo
   }
 
   if (request.method === "POST" && url.pathname === "/games") {
-    const input = await readJsonBody<CreateGameRequest>(request);
-    const room = createOrReplaceRoom(input);
+    const body = await readJsonBody(request);
+    const input = createGameRequestSchema.safeParse(body);
+
+    if (!input.success) {
+      writeJson(response, 400, {
+        error: "Create game request was invalid.",
+        details: input.error.flatten(),
+      });
+      return;
+    }
+
+    const room = createOrReplaceRoom(input.data);
     writeJson(response, 201, {
       matchId: room.matchId,
       websocketPath: `/games/${room.matchId}/connect`,
@@ -78,8 +96,6 @@ async function handleHttpRequest(request: IncomingMessage, response: ServerRespo
 }
 
 function createOrReplaceRoom(input: CreateGameRequest): GameRoom {
-  validateCreateGameRequest(input);
-
   const state = createNamedGame(input.targetScore, input.participants);
   const room: GameRoom = {
     matchId: input.matchId,
@@ -117,22 +133,17 @@ function attachConnection(room: GameRoom, connection: WebSocket): void {
   });
 }
 
-function validateCreateGameRequest(input: CreateGameRequest): void {
-  if (!Number.isInteger(input.matchId)) throw new Error("matchId must be an integer.");
-  if (!Number.isInteger(input.targetScore) || input.targetScore <= 0) throw new Error("targetScore must be positive.");
-  if (!Array.isArray(input.participants) || input.participants.length !== 2) throw new Error("participants must contain two players.");
-}
-
-async function readJsonBody<T>(request: IncomingMessage): Promise<T> {
+async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(Buffer.from(chunk));
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as T;
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
 }
 
 function parseSocketMessage(message: string): { type: string } | null {
   try {
     const input = JSON.parse(message) as unknown;
-    return typeof input === "object" && input !== null && "type" in input ? (input as { type: string }) : null;
+    const result = socketMessageSchema.safeParse(input);
+    return result.success ? result.data : null;
   } catch {
     return null;
   }

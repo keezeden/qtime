@@ -146,6 +146,7 @@ describe('MatchesService', () => {
         version: 0,
         status: 'active',
         state: { phase: 'ready' },
+        gameConnection: null,
         updatedAt: '2026-01-01T00:00:02.000Z',
       },
     });
@@ -241,6 +242,7 @@ describe('MatchesService', () => {
         version: 1,
         status: 'active',
         state: { phase: 'submitted' },
+        gameConnection: null,
         updatedAt: '2026-01-01T00:00:03.000Z',
       },
     });

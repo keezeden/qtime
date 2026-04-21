@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CreateGameEventDto } from './dto/create-game-event.dto';
 import type { FindCurrentMatchDto } from './dto/find-current-match.dto';
 import type { ListGameEventsDto } from './dto/list-game-events.dto';
+import { preserveGameConnectionState, readGameConnection } from './game-connection';
 import { GAME_EVENT_TYPES, type GameEventType } from './game-event-types';
 import { finishMatch } from './match-finalization';
 import { createHistorySummary, historyMatchSelect, serializeHistoryMatch } from './match-history';
@@ -183,6 +184,7 @@ export class MatchesService {
       }
 
       const nextVersion = input.baseVersion + 1;
+      const nextState = preserveGameConnectionState(gameState.state, input.nextState);
       const event = await transaction.gameEvent.create({
         data: { matchId, version: nextVersion, userId, type: input.type, payload: input.payload },
         select: gameEventSelect,
@@ -193,12 +195,12 @@ export class MatchesService {
         data: {
           version: nextVersion,
           status: input.stateStatus,
-          state: input.nextState,
+          state: nextState,
         },
         select: gameStateSelect,
       });
 
-      if (input.type === 'match_finished') await finishMatch(transaction, matchId, input.nextState);
+      if (input.type === 'match_finished') await finishMatch(transaction, matchId, nextState);
 
       return { event, state: updatedState };
     });
@@ -258,6 +260,7 @@ export class MatchesService {
   private serializeGameState(gameState: GameStateRecord): MatchStateResponse['state'] {
     return {
       ...gameState,
+      gameConnection: readGameConnection(gameState.state),
       updatedAt: gameState.updatedAt.toISOString(),
     };
   }

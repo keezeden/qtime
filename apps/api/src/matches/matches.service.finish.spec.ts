@@ -129,6 +129,7 @@ describe('MatchesService terminal events', () => {
         version: 1,
         status: 'finished',
         state: { phase: 'finished', winnerUserId: 1 },
+        gameConnection: null,
         updatedAt: '2026-01-01T00:00:03.000Z',
       },
     });

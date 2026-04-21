@@ -1,4 +1,5 @@
-import type { GameState } from "@qtime/game";
+import { gameStateSchema, type GameState } from "@qtime/game";
+import { z } from "zod";
 
 export type GameEventType =
   | "game_initialized"
@@ -28,6 +29,12 @@ export type GameStateEnvelope = {
   version: number;
   status: string;
   state: unknown;
+  gameConnection: {
+    httpUrl: string;
+    websocketPath: string;
+    websocketUrl: string;
+    version: number;
+  } | null;
   updatedAt: string;
 };
 
@@ -159,25 +166,12 @@ export async function submitGameState(
 }
 
 export function readEventState(event: GameEvent): GameState | null {
-  if (!isRecord(event.payload)) {
-    return null;
-  }
-
-  const nextState = event.payload.nextState;
-  return isGameState(nextState) ? nextState : null;
+  const result = gameEventPayloadSchema.safeParse(event.payload);
+  return result.success ? result.data.nextState : null;
 }
 
 export function isGameState(value: unknown): value is GameState {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.targetScore === "number" &&
-    isRecord(value.players) &&
-    value.currentPlayerId !== undefined &&
-    Array.isArray(value.tileBag) &&
-    Array.isArray(value.playedWords) &&
-    Array.isArray(value.eventLog)
-  );
+  return gameStateSchema.safeParse(value).success;
 }
 
 async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
@@ -198,6 +192,6 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+const gameEventPayloadSchema = z.object({
+  nextState: gameStateSchema,
+});
