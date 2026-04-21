@@ -308,6 +308,37 @@ Successful response:
 
 Returns `404` when the match does not exist or the authenticated user is not a participant.
 
+### `GET /matches/history`
+
+Returns the authenticated user's rating summary and recent completed matches.
+
+Successful response:
+
+```json
+{
+  "summary": {
+    "rating": 1216,
+    "wins": 1,
+    "losses": 0,
+    "totalMatches": 1,
+    "winRate": 100
+  },
+  "matches": [
+    {
+      "id": 1,
+      "opponentName": "rival",
+      "result": "WIN",
+      "ratingDelta": 16,
+      "oldRating": 1200,
+      "newRating": 1216,
+      "finishedAt": "2026-04-21T00:00:00.000Z",
+      "finalScore": 52,
+      "opponentScore": 30
+    }
+  ]
+}
+```
+
 ### `GET /matches/:id/state`
 
 Returns the latest persisted game state for one match.

@@ -4,6 +4,7 @@ type QueueStatus = "idle" | "queued" | "matched";
 
 type QueuePanelProps = {
   message: string;
+  onCancel: () => void;
   onQueue: () => void;
   status: QueueStatus;
 };
@@ -29,6 +30,7 @@ export function GameHeader(): React.ReactElement {
 
 export function QueuePanel({
   message,
+  onCancel,
   onQueue,
   status,
 }: QueuePanelProps): React.ReactElement {
@@ -54,6 +56,15 @@ export function QueuePanel({
         >
           {status === "queued" ? "Searching" : "Queue Multiplayer"}
         </button>
+        {status === "queued" ? (
+          <button
+            className="font-display mt-3 min-h-10 border-2 border-border bg-surface px-4 text-xs font-bold uppercase tracking-[0.14em] text-muted"
+            onClick={onCancel}
+            type="button"
+          >
+            Cancel
+          </button>
+        ) : null}
       </div>
     </section>
   );

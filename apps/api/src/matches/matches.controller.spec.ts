@@ -14,6 +14,7 @@ describe('MatchesController', () => {
           provide: MatchesService,
           useValue: {
             findCurrent: jest.fn(),
+            findHistory: jest.fn(),
             findOne: jest.fn(),
             findState: jest.fn(),
             findEvents: jest.fn(),

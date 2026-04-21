@@ -41,6 +41,29 @@ export type GameEvent = {
   createdAt: string;
 };
 
+export type MatchHistoryItem = {
+  id: number;
+  opponentName: string;
+  result: string | null;
+  ratingDelta: number | null;
+  oldRating: number | null;
+  newRating: number | null;
+  finishedAt: string | null;
+  finalScore: number | null;
+  opponentScore: number | null;
+};
+
+export type MatchHistoryResponse = {
+  summary: {
+    rating: number;
+    wins: number;
+    losses: number;
+    totalMatches: number;
+    winRate: number | null;
+  };
+  matches: MatchHistoryItem[];
+};
+
 type CurrentMatchResponse = {
   match: MatchSummary | null;
 };
@@ -101,6 +124,12 @@ export async function fetchGameEvents(
     { method: "GET" },
   );
   return body.events;
+}
+
+export async function fetchMatchHistory(): Promise<MatchHistoryResponse> {
+  return await apiFetch<MatchHistoryResponse>("/api/matches/history", {
+    method: "GET",
+  });
 }
 
 export async function submitGameState(

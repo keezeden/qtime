@@ -7,10 +7,12 @@ import type { FindCurrentMatchDto } from './dto/find-current-match.dto';
 import type { ListGameEventsDto } from './dto/list-game-events.dto';
 import { GAME_EVENT_TYPES, type GameEventType } from './game-event-types';
 import { finishMatch } from './match-finalization';
+import { createHistorySummary, historyMatchSelect, serializeHistoryMatch } from './match-history';
 import type {
   CurrentMatchResponse,
   GameEventAcceptedResponse,
   GameEventsResponse,
+  MatchHistoryResponse,
   MatchResponse,
   MatchStateResponse,
 } from './types/match-response';
@@ -82,6 +84,35 @@ export class MatchesService {
 
   private parseStartedAfter(query: FindCurrentMatchDto): Date | null {
     return query.startedAfter ? new Date(query.startedAfter) : null;
+  }
+
+  async findHistory(userId: number): Promise<MatchHistoryResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { rating: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User was not found for match history.');
+    }
+
+    const matches = await this.prisma.match.findMany({
+      where: {
+        status: MatchStatus.FINISHED,
+        matchParticipants: {
+          some: { userId },
+        },
+      },
+      orderBy: { finishedAt: 'desc' },
+      take: 20,
+      select: historyMatchSelect,
+    });
+    const history = matches.map((match) => serializeHistoryMatch(match, userId));
+
+    return {
+      summary: createHistorySummary(user.rating, history),
+      matches: history,
+    };
   }
 
   async findOne(matchId: number, userId: number): Promise<MatchResponse> {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { AuthUser } from "@/app/lib/auth";
+import { FinishGameModal } from "./finish-game-modal";
 import { PlayerColumn, RackPanel, ScoreChip, WordSlots } from "./word-duel-components";
 import { VISIBLE_WORD_SLOTS } from "./word-duel-constants";
 import { GameHeader, QueuePanel, StatusMessage } from "./multiplayer-queue-panel";
@@ -26,6 +27,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   const [version, setVersion] = useState(0);
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
   const [message, setMessage] = useState("");
+  const [dismissedFinishMatchId, setDismissedFinishMatchId] = useState<number | null>(null);
   const queueJobIdRef = useRef<string | null>(null);
   const localPlayerId = useMemo(() => getLocalPlayerId(match, user.id), [match, user.id]);
   const currentPlayer = game ? game.players[game.currentPlayerId] : null;
@@ -36,11 +38,9 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   const previewScore = useMemo(() => scoreWord(wordEntry), [wordEntry]);
 
   useEffect(() => {
-    void startMatchmaking();
+    void startMatchmaking(false);
 
-    return () => {
-      void leaveCurrentQueue();
-    };
+    return () => void leaveCurrentQueue();
   }, []);
 
   useEffect(() => {
@@ -128,13 +128,14 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     }
   }
 
-  async function startMatchmaking(): Promise<void> {
-    if (queueStatus === "queued" || queueStatus === "matched") return;
+  async function startMatchmaking(force: boolean): Promise<void> {
+    if (!force && (queueStatus === "queued" || queueStatus === "matched")) return;
 
     const startedAfter = new Date().toISOString();
     setMatch(null);
     setGame(null);
     setVersion(0);
+    setDismissedFinishMatchId(null);
     setQueuedAfter(startedAfter);
     setQueueStatus("queued");
     setMessage("Searching for an opponent in OCE.");
@@ -258,7 +259,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     <main className="flex min-h-screen flex-col overflow-hidden px-4 py-5 sm:px-6">
       <GameHeader />
       {!match || !game || !currentPlayer || !rackPlayer ? (
-        <QueuePanel message={message} onQueue={() => void startMatchmaking()} status={queueStatus} />
+        <QueuePanel message={message} onCancel={() => { setQueueStatus("idle"); setQueuedAfter(null); setMessage(""); void leaveCurrentQueue(); }} onQueue={() => void startMatchmaking(false)} status={queueStatus} />
       ) : (
         <section className="grid w-full flex-1 grid-rows-[auto_1fr_auto] gap-5 py-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(150px,12vw)_1fr_minmax(150px,12vw)] lg:items-start">
@@ -290,6 +291,9 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
         </section>
       )}
       {game ? <MultiplayerRulesButton game={game} /> : null}
+      {game && match && game.status === "finished" && dismissedFinishMatchId !== match.id ? (
+        <FinishGameModal game={game} matchId={match.id} onDismiss={() => setDismissedFinishMatchId(match.id)} onQueueAgain={() => void startMatchmaking(true)} />
+      ) : null}
     </main>
   );
 }

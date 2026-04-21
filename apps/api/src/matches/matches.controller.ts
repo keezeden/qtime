@@ -10,6 +10,7 @@ import type {
   CurrentMatchResponse,
   GameEventAcceptedResponse,
   GameEventsResponse,
+  MatchHistoryResponse,
   MatchResponse,
   MatchStateResponse,
 } from './types/match-response';
@@ -25,6 +26,11 @@ export class MatchesController {
     @Query() query: FindCurrentMatchDto,
   ): Promise<CurrentMatchResponse> {
     return this.matchesService.findCurrent(user.id, query);
+  }
+
+  @Get('history')
+  history(@CurrentUser() user: AuthUser): Promise<MatchHistoryResponse> {
+    return this.matchesService.findHistory(user.id);
   }
 
   @Get(':id')

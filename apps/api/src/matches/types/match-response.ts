@@ -59,3 +59,28 @@ export type GameEventAcceptedResponse = {
 export type GameEventsResponse = {
   events: GameEventResponse[];
 };
+
+export type MatchHistoryItemResponse = {
+  id: number;
+  opponentName: string;
+  result: MatchResult | null;
+  ratingDelta: number | null;
+  oldRating: number | null;
+  newRating: number | null;
+  finishedAt: string | null;
+  finalScore: number | null;
+  opponentScore: number | null;
+};
+
+export type MatchHistorySummaryResponse = {
+  rating: number;
+  wins: number;
+  losses: number;
+  totalMatches: number;
+  winRate: number | null;
+};
+
+export type MatchHistoryResponse = {
+  summary: MatchHistorySummaryResponse;
+  matches: MatchHistoryItemResponse[];
+};

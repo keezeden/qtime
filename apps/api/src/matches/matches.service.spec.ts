@@ -6,17 +6,9 @@ import { MatchesService } from './matches.service';
 
 type PrismaMock = {
   $transaction: jest.Mock;
-  match: {
-    findFirst: jest.Mock;
-  };
-  gameState: {
-    findUnique: jest.Mock;
-    update: jest.Mock;
-  };
-  gameEvent: {
-    findMany: jest.Mock;
-    create: jest.Mock;
-  };
+  match: { findFirst: jest.Mock };
+  gameState: { findUnique: jest.Mock; update: jest.Mock };
+  gameEvent: { findMany: jest.Mock; create: jest.Mock };
 };
 
 const makeMatch = () => ({
@@ -52,17 +44,9 @@ describe('MatchesService', () => {
   beforeEach(async () => {
     prisma = {
       $transaction: jest.fn(),
-      match: {
-        findFirst: jest.fn(),
-      },
-      gameState: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
-      },
-      gameEvent: {
-        findMany: jest.fn(),
-        create: jest.fn(),
-      },
+      match: { findFirst: jest.fn() },
+      gameState: { findUnique: jest.fn(), update: jest.fn() },
+      gameEvent: { findMany: jest.fn(), create: jest.fn() },
     };
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
 

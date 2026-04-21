@@ -1,21 +1,42 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { requireUser } from "@/app/lib/auth";
 
-const statTiles = [
-  { label: "Rating", value: "1200", tone: "text-accent-teal" },
-  { label: "Wins", value: "0", tone: "text-accent-pink" },
-  { label: "Win Rate", value: "--", tone: "text-accent-yellow" },
-  { label: "Best Word", value: "TBD", tone: "text-accent-green" },
-];
+const API_URL = process.env.QTIME_API_URL ?? "http://localhost:3000";
 
-const recentMatches = [
-  { opponent: "Waiting Room", result: "No matches yet", score: "--" },
-  { opponent: "Queue Preview", result: "Coming soon", score: "--" },
-  { opponent: "Rating History", result: "Coming soon", score: "--" },
-];
+type MatchHistoryItem = {
+  id: number;
+  opponentName: string;
+  result: string | null;
+  ratingDelta: number | null;
+  oldRating: number | null;
+  newRating: number | null;
+  finishedAt: string | null;
+  finalScore: number | null;
+  opponentScore: number | null;
+};
+
+type MatchHistoryResponse = {
+  summary: {
+    rating: number;
+    wins: number;
+    losses: number;
+    totalMatches: number;
+    winRate: number | null;
+  };
+  matches: MatchHistoryItem[];
+};
 
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
+  const history = await fetchMatchHistory();
+  const statTiles = [
+    { label: "Rating", value: `${history.summary.rating}`, tone: "text-accent-teal" },
+    { label: "Wins", value: `${history.summary.wins}`, tone: "text-accent-pink" },
+    { label: "Win Rate", value: formatWinRate(history.summary.winRate), tone: "text-accent-yellow" },
+    { label: "Matches", value: `${history.summary.totalMatches}`, tone: "text-accent-green" },
+  ];
+  const ratingPath = createRatingPath(history.matches, history.summary.rating);
 
   return (
     <main className="min-h-screen px-5 py-8 sm:px-8">
@@ -47,8 +68,7 @@ export default async function DashboardPage() {
               {user.nametag
                 ? `${user.nametag} is locked in.`
                 : "Your QTime profile is ready."}{" "}
-              Match stats, rating history, and queue state can land here as the
-              backend grows.
+              Track your rating movement and recent word-duel results.
             </p>
           </div>
 
@@ -94,22 +114,26 @@ export default async function DashboardPage() {
               Recent Matches
             </h2>
             <div className="mt-5 divide-y divide-border">
-              {recentMatches.map((match) => (
+              {history.matches.length ? history.matches.map((match) => (
                 <div
                   className="grid grid-cols-[1fr_auto] gap-4 py-4"
-                  key={match.opponent}
+                  key={match.id}
                 >
                   <div>
                     <p className="font-display text-base font-bold text-foreground">
-                      {match.opponent}
+                      {match.opponentName}
                     </p>
-                    <p className="mt-1 text-sm text-muted">{match.result}</p>
+                    <p className="mt-1 text-sm text-muted">
+                      {formatResult(match.result)} / {formatScore(match)}
+                    </p>
                   </div>
-                  <p className="font-display text-lg font-bold text-accent-pink">
-                    {match.score}
+                  <p className={`font-display text-lg font-bold ${getDeltaTone(match.ratingDelta)}`}>
+                    {formatDelta(match.ratingDelta)}
                   </p>
                 </div>
-              ))}
+              )) : (
+                <p className="py-6 text-sm font-semibold text-muted">No completed matches yet.</p>
+              )}
             </div>
           </section>
 
@@ -118,14 +142,15 @@ export default async function DashboardPage() {
               Rating Path
             </h2>
             <div className="mt-6 flex min-h-48 items-end gap-3">
-              {[34, 48, 42, 62, 58, 74, 68].map((height, index) => (
+              {ratingPath.map((point, index) => (
                 <div
                   className="flex flex-1 flex-col items-center gap-3"
-                  key={height}
+                  key={`${point.rating}-${index}`}
                 >
                   <div
                     className="w-full border-2 border-accent-teal bg-accent-teal/20"
-                    style={{ height }}
+                    style={{ height: point.height }}
+                    title={`Rating ${point.rating}`}
                   />
                   <span className="text-[10px] font-bold text-muted">
                     {index + 1}
@@ -138,4 +163,56 @@ export default async function DashboardPage() {
       </section>
     </main>
   );
+}
+
+async function fetchMatchHistory(): Promise<MatchHistoryResponse> {
+  const cookieStore = await cookies();
+  const response = await fetch(`${API_URL}/matches/history`, {
+    headers: { Cookie: cookieStore.toString() },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load match history: ${response.status} ${await response.text()}`);
+  }
+
+  return (await response.json()) as MatchHistoryResponse;
+}
+
+function createRatingPath(matches: MatchHistoryItem[], currentRating: number): { rating: number; height: number }[] {
+  const ratings = [...matches].reverse().map((match) => match.newRating).filter((rating): rating is number => rating !== null);
+  const path = ratings.length ? ratings : [currentRating];
+  const min = Math.min(...path);
+  const max = Math.max(...path);
+  const span = Math.max(1, max - min);
+
+  return path.slice(-8).map((rating) => ({
+    rating,
+    height: 40 + Math.round(((rating - min) / span) * 100),
+  }));
+}
+
+function formatWinRate(winRate: number | null): string {
+  return winRate === null ? "--" : `${winRate}%`;
+}
+
+function formatResult(result: string | null): string {
+  if (result === "WIN") return "Win";
+  if (result === "LOSS") return "Loss";
+  return "Result pending";
+}
+
+function formatScore(match: MatchHistoryItem): string {
+  if (match.finalScore === null || match.opponentScore === null) return "--";
+  return `${match.finalScore}-${match.opponentScore}`;
+}
+
+function formatDelta(delta: number | null): string {
+  if (delta === null) return "--";
+  return delta > 0 ? `+${delta}` : `${delta}`;
+}
+
+function getDeltaTone(delta: number | null): string {
+  if (delta === null) return "text-muted";
+  return delta >= 0 ? "text-accent-green" : "text-accent-pink";
 }
