@@ -24,6 +24,10 @@ export type GameSocketCommand =
   | {
       type: "refresh_rack";
       baseVersion: number;
+    }
+  | {
+      type: "shuffle_rack";
+      baseVersion: number;
     };
 
 const gameSocketMessageSchema = z.discriminatedUnion("type", [

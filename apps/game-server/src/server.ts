@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
-import { createGame, refreshRack, type GameState } from "@qtime/game";
+import { createGame, refreshRack, shuffleTiles, type GameState } from "@qtime/game";
 import { z } from "zod";
 
 const port = Number.parseInt(process.env.GAME_SERVER_PORT ?? "3002", 10);
@@ -23,6 +23,10 @@ const socketMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ping") }),
   z.object({
     type: z.literal("refresh_rack"),
+    baseVersion: z.number().int().nonnegative(),
+  }),
+  z.object({
+    type: z.literal("shuffle_rack"),
     baseVersion: z.number().int().nonnegative(),
   }),
 ]);
@@ -135,26 +139,54 @@ function attachConnection(room: GameRoom, connection: WebSocket): void {
     if (!input) return;
     if (input.type === "ping") sendJson(connection, { type: "pong" });
     if (input.type === "refresh_rack") handleRefreshRackCommand(room, connection, input.baseVersion);
+    if (input.type === "shuffle_rack") handleShuffleRackCommand(room, connection, input.baseVersion);
   });
   connection.on("close", () => {
     room.connections.delete(connection);
   });
 }
 
+function handleShuffleRackCommand(room: GameRoom, connection: WebSocket, baseVersion: number): void {
+  if (!canApplyCommand(room, connection, baseVersion)) return;
+
+  room.state = shuffleCurrentRack(room.state);
+  room.version += 1;
+  broadcastSnapshot(room);
+}
+
 function handleRefreshRackCommand(room: GameRoom, connection: WebSocket, baseVersion: number): void {
-  if (baseVersion !== room.version) {
-    sendJson(connection, {
-      type: "command_rejected",
-      reason: "version_mismatch",
-      currentVersion: room.version,
-    });
-    sendSnapshot(connection, room);
-    return;
-  }
+  if (!canApplyCommand(room, connection, baseVersion)) return;
 
   room.state = refreshRack(room.state);
   room.version += 1;
   broadcastSnapshot(room);
+}
+
+function canApplyCommand(room: GameRoom, connection: WebSocket, baseVersion: number): boolean {
+  if (baseVersion === room.version) return true;
+
+  sendJson(connection, {
+    type: "command_rejected",
+    reason: "version_mismatch",
+    currentVersion: room.version,
+  });
+  sendSnapshot(connection, room);
+  return false;
+}
+
+function shuffleCurrentRack(state: GameState): GameState {
+  if (state.status === "finished") return state;
+
+  return {
+    ...state,
+    players: {
+      ...state.players,
+      [state.currentPlayerId]: {
+        ...state.players[state.currentPlayerId],
+        rack: shuffleTiles(state.players[state.currentPlayerId].rack),
+      },
+    },
+  };
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {

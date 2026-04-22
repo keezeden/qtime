@@ -175,6 +175,11 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   async function handleShuffleRack(): Promise<void> {
     if (!game || !match || !isLocalTurn) return;
 
+    if (gameSocket.sendCommand({ type: "shuffle_rack", baseVersion: version })) {
+      clearSelectedTiles();
+      return;
+    }
+
     const nextGame = {
       ...game,
       players: {
