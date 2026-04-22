@@ -38,6 +38,17 @@ export type GameStateEnvelope = {
   updatedAt: string;
 };
 
+export type GameSocketMessage =
+  | {
+      type: "snapshot";
+      matchId: number;
+      state: GameState;
+      version: number;
+    }
+  | {
+      type: "pong";
+    };
+
 export type GameEvent = {
   id: number;
   matchId: number;
@@ -174,6 +185,12 @@ export function isGameState(value: unknown): value is GameState {
   return gameStateSchema.safeParse(value).success;
 }
 
+export function readGameSocketMessage(value: string): GameSocketMessage | null {
+  const input = parseJson(value);
+  const result = gameSocketMessageSchema.safeParse(input);
+  return result.success ? result.data : null;
+}
+
 async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -195,3 +212,23 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
 const gameEventPayloadSchema = z.object({
   nextState: gameStateSchema,
 });
+
+const gameSocketMessageSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("snapshot"),
+    matchId: z.number(),
+    state: gameStateSchema,
+    version: z.number(),
+  }),
+  z.object({
+    type: z.literal("pong"),
+  }),
+]);
+
+function parseJson(value: string): unknown {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}

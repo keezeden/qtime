@@ -12,11 +12,10 @@ import { refreshRack, scoreWord, submitWord } from "@qtime/game";
 import { shuffleTiles } from "@qtime/game";
 import { createFinishedMessage, createNamedGame, createWordEventSubmission, getLocalPlayerId } from "./multiplayer-state";
 import { MultiplayerRulesButton } from "./multiplayer-rules-button";
+import { useGameSocket } from "./use-game-socket";
+import { useWordKeyboard } from "./use-word-keyboard";
 
-type Props = {
-  user: AuthUser;
-};
-
+type Props = { user: AuthUser };
 type QueueStatus = "idle" | "queued" | "matched";
 
 export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
@@ -28,6 +27,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
   const [message, setMessage] = useState("");
   const [dismissedFinishMatchId, setDismissedFinishMatchId] = useState<number | null>(null);
+  const [gameSocketUrl, setGameSocketUrl] = useState<string | null>(null);
   const queueJobIdRef = useRef<string | null>(null);
   const localPlayerId = useMemo(() => getLocalPlayerId(match, user.id), [match, user.id]);
   const currentPlayer = game ? game.players[game.currentPlayerId] : null;
@@ -36,6 +36,19 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   const selectedTileIds = useMemo(() => new Set(selectedTiles.map((tile) => tile.id)), [selectedTiles]);
   const wordEntry = useMemo(() => selectedTiles.map((tile) => tile.letter).join(""), [selectedTiles]);
   const previewScore = useMemo(() => scoreWord(wordEntry), [wordEntry]);
+
+  const clearSelectedTiles = useCallback((): void => setSelectedTiles([]), []);
+
+  const applySocketSnapshot = useCallback((nextGame: GameState, nextVersion: number): void => {
+    setGame(nextGame);
+    setVersion(nextVersion);
+    clearSelectedTiles();
+    setMessage(createFinishedMessage(nextGame));
+  }, [clearSelectedTiles]);
+
+  const handleSocketError = useCallback((): void => {
+    setMessage("Connection to the game server was interrupted.");
+  }, []);
 
   useEffect(() => {
     void startMatchmaking(false);
@@ -57,42 +70,23 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     return () => window.clearInterval(interval);
   }, [match, version]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent): void {
-      if (!game || !rackPlayer || !isLocalTurn) return;
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
+  useGameSocket({
+    matchId: match?.id ?? null,
+    websocketUrl: gameSocketUrl,
+    onSnapshot: applySocketSnapshot,
+    onConnectionError: handleSocketError,
+  });
 
-      if (event.key === "Backspace") {
-        event.preventDefault();
-        removeLastTile();
-        return;
-      }
-
-      if (event.key === "Enter") {
-        event.preventDefault();
-        void commitWord();
-        return;
-      }
-
-      if (/^[a-z]$/i.test(event.key)) {
-        event.preventDefault();
-        addLetterToWord(event.key);
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [game, isLocalTurn, rackPlayer, selectedTiles]);
-
-  const clearSelectedTiles = useCallback((): void => {
-    setSelectedTiles([]);
-  }, []);
+  useWordKeyboard({
+    enabled: Boolean(game && rackPlayer && isLocalTurn),
+    onBackspace: removeLastTile,
+    onCommit: () => void commitWord(),
+    onLetter: addLetterToWord,
+  });
 
   async function refreshCurrentMatch(startedAfter: string | null): Promise<void> {
     const currentMatch = await fetchCurrentMatch(startedAfter);
-
     if (!currentMatch) return;
-
     queueJobIdRef.current = null;
     setMatch(currentMatch);
     setQueueStatus("matched");
@@ -102,9 +96,15 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   async function loadMatchState(currentMatch: MatchSummary): Promise<void> {
     const envelope = await fetchMatchState(currentMatch.id);
     setVersion(envelope.version);
+    setGameSocketUrl(envelope.gameConnection?.websocketUrl ?? null);
 
     if (isGameState(envelope.state)) {
       setGame(envelope.state);
+      return;
+    }
+
+    if (envelope.gameConnection) {
+      setMessage("Connecting to the game server.");
       return;
     }
 
@@ -119,7 +119,6 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     const events = await fetchGameEvents(matchId, version);
     const latestEvent = events.at(-1);
     const latestState = latestEvent ? readEventState(latestEvent) : null;
-
     if (latestEvent && latestState) {
       setGame(latestState);
       setVersion(latestEvent.version);
@@ -130,10 +129,10 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
 
   async function startMatchmaking(force: boolean): Promise<void> {
     if (!force && (queueStatus === "queued" || queueStatus === "matched")) return;
-
     const startedAfter = new Date().toISOString();
     setMatch(null);
     setGame(null);
+    setGameSocketUrl(null);
     setVersion(0);
     setDismissedFinishMatchId(null);
     setQueuedAfter(startedAfter);
@@ -147,9 +146,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
 
   async function leaveCurrentQueue(): Promise<void> {
     const queueJobId = queueJobIdRef.current;
-
     if (!queueJobId) return;
-
     queueJobIdRef.current = null;
     await leaveMatchmaking(queueJobId);
   }
