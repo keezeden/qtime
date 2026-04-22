@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
-import { createGame, type GameState } from "@qtime/game";
+import { createGame, refreshRack, type GameState } from "@qtime/game";
 import { z } from "zod";
 
 const port = Number.parseInt(process.env.GAME_SERVER_PORT ?? "3002", 10);
@@ -19,17 +19,22 @@ const createGameRequestSchema = z.object({
   participants: z.tuple([gameParticipantSchema, gameParticipantSchema]),
 });
 
-const socketMessageSchema = z.object({
-  type: z.string(),
-});
+const socketMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("ping") }),
+  z.object({
+    type: z.literal("refresh_rack"),
+    baseVersion: z.number().int().nonnegative(),
+  }),
+]);
 
 type GameParticipant = z.infer<typeof gameParticipantSchema>;
 type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
 
 type GameRoom = {
+  connections: Set<WebSocket>;
   matchId: number;
   state: GameState;
-  connections: Set<WebSocket>;
+  version: number;
 };
 
 const server = createServer((request, response) => {
@@ -98,9 +103,10 @@ async function handleHttpRequest(request: IncomingMessage, response: ServerRespo
 function createOrReplaceRoom(input: CreateGameRequest): GameRoom {
   const state = createNamedGame(input.targetScore, input.participants);
   const room: GameRoom = {
+    connections: new Set(),
     matchId: input.matchId,
     state,
-    connections: new Set(),
+    version: 0,
   };
 
   rooms.set(input.matchId, room);
@@ -122,15 +128,33 @@ function createNamedGame(targetScore: number, participants: [GameParticipant, Ga
 
 function attachConnection(room: GameRoom, connection: WebSocket): void {
   room.connections.add(connection);
-  sendJson(connection, { type: "snapshot", matchId: room.matchId, state: room.state, version: 0 });
+  sendSnapshot(connection, room);
 
   connection.on("message", (message) => {
     const input = parseSocketMessage(message.toString());
-    if (input?.type === "ping") sendJson(connection, { type: "pong" });
+    if (!input) return;
+    if (input.type === "ping") sendJson(connection, { type: "pong" });
+    if (input.type === "refresh_rack") handleRefreshRackCommand(room, connection, input.baseVersion);
   });
   connection.on("close", () => {
     room.connections.delete(connection);
   });
+}
+
+function handleRefreshRackCommand(room: GameRoom, connection: WebSocket, baseVersion: number): void {
+  if (baseVersion !== room.version) {
+    sendJson(connection, {
+      type: "command_rejected",
+      reason: "version_mismatch",
+      currentVersion: room.version,
+    });
+    sendSnapshot(connection, room);
+    return;
+  }
+
+  room.state = refreshRack(room.state);
+  room.version += 1;
+  broadcastSnapshot(room);
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
@@ -139,7 +163,7 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
 }
 
-function parseSocketMessage(message: string): { type: string } | null {
+function parseSocketMessage(message: string): z.infer<typeof socketMessageSchema> | null {
   try {
     const input = JSON.parse(message) as unknown;
     const result = socketMessageSchema.safeParse(input);
@@ -147,6 +171,21 @@ function parseSocketMessage(message: string): { type: string } | null {
   } catch {
     return null;
   }
+}
+
+function broadcastSnapshot(room: GameRoom): void {
+  for (const connection of room.connections) {
+    sendSnapshot(connection, room);
+  }
+}
+
+function sendSnapshot(connection: WebSocket, room: GameRoom): void {
+  sendJson(connection, {
+    type: "snapshot",
+    matchId: room.matchId,
+    state: room.state,
+    version: room.version,
+  });
 }
 
 function sendJson(connection: WebSocket, body: unknown): void {

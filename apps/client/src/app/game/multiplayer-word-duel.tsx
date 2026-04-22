@@ -84,7 +84,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     return () => window.clearInterval(interval);
   }, [match, pollEvents]);
 
-  useGameSocket({
+  const gameSocket = useGameSocket({
     matchId: match?.id ?? null,
     websocketUrl: gameSocketUrl,
     onSnapshot: applySocketSnapshot,
@@ -162,6 +162,11 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
 
   async function handleRefreshRack(): Promise<void> {
     if (!game || !match || !isLocalTurn) return;
+
+    if (gameSocket.sendCommand({ type: "refresh_rack", baseVersion: version })) {
+      clearSelectedTiles();
+      return;
+    }
 
     await publishState(match.id, version, "rack_refreshed", {}, refreshRack(game));
     clearSelectedTiles();
