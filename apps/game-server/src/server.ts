@@ -1,8 +1,14 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
-import { WebSocketServer, type WebSocket } from "ws";
-import { createGame, refreshRack, shuffleTiles, submitWord, type GameState } from "@qtime/game";
+import { WebSocketServer } from "ws";
 import { z } from "zod";
+import {
+  attachConnection,
+  closeGameRoomPersistence,
+  createGameRoom,
+  type GameParticipant,
+  type GameRoom,
+} from "./game-room";
 
 const port = Number.parseInt(process.env.GAME_SERVER_PORT ?? "3002", 10);
 const rooms = new Map<number, GameRoom>();
@@ -19,31 +25,10 @@ const createGameRequestSchema = z.object({
   participants: z.tuple([gameParticipantSchema, gameParticipantSchema]),
 });
 
-const socketMessageSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("ping") }),
-  z.object({
-    type: z.literal("refresh_rack"),
-    baseVersion: z.number().int().nonnegative(),
-  }),
-  z.object({
-    type: z.literal("shuffle_rack"),
-    baseVersion: z.number().int().nonnegative(),
-  }),
-  z.object({
-    type: z.literal("submit_word"),
-    baseVersion: z.number().int().nonnegative(),
-    word: z.string(),
-  }),
-]);
-
-type GameParticipant = z.infer<typeof gameParticipantSchema>;
-type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
-
-type GameRoom = {
-  connections: Set<WebSocket>;
+type CreateGameRequest = {
   matchId: number;
-  state: GameState;
-  version: number;
+  targetScore: number;
+  participants: [GameParticipant, GameParticipant];
 };
 
 const server = createServer((request, response) => {
@@ -76,6 +61,9 @@ server.on("upgrade", (request, socket, head) => {
 server.listen(port, () => {
   console.log("Game server listening", { port });
 });
+
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
+process.once("SIGINT", () => void shutdown("SIGINT"));
 
 async function handleHttpRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
   const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
@@ -110,107 +98,9 @@ async function handleHttpRequest(request: IncomingMessage, response: ServerRespo
 }
 
 function createOrReplaceRoom(input: CreateGameRequest): GameRoom {
-  const state = createNamedGame(input.targetScore, input.participants);
-  const room: GameRoom = {
-    connections: new Set(),
-    matchId: input.matchId,
-    state,
-    version: 0,
-  };
-
+  const room = createGameRoom(input.matchId, input.targetScore, input.participants);
   rooms.set(input.matchId, room);
   return room;
-}
-
-function createNamedGame(targetScore: number, participants: [GameParticipant, GameParticipant]): GameState {
-  const game = createGame(targetScore);
-  const names = Object.fromEntries(participants.map((participant) => [participant.seat, participant.username]));
-
-  return {
-    ...game,
-    players: {
-      "player-one": { ...game.players["player-one"], name: names[0] ?? "Player One" },
-      "player-two": { ...game.players["player-two"], name: names[1] ?? "Player Two" },
-    },
-  };
-}
-
-function attachConnection(room: GameRoom, connection: WebSocket): void {
-  room.connections.add(connection);
-  sendSnapshot(connection, room);
-
-  connection.on("message", (message) => {
-    const input = parseSocketMessage(message.toString());
-    if (!input) return;
-    if (input.type === "ping") sendJson(connection, { type: "pong" });
-    if (input.type === "refresh_rack") handleRefreshRackCommand(room, connection, input.baseVersion);
-    if (input.type === "shuffle_rack") handleShuffleRackCommand(room, connection, input.baseVersion);
-    if (input.type === "submit_word") handleSubmitWordCommand(room, connection, input.baseVersion, input.word);
-  });
-  connection.on("close", () => {
-    room.connections.delete(connection);
-  });
-}
-
-function handleSubmitWordCommand(room: GameRoom, connection: WebSocket, baseVersion: number, word: string): void {
-  if (!canApplyCommand(room, connection, baseVersion)) return;
-
-  const result = submitWord(room.state, word);
-  if (result.error) {
-    rejectCommand(connection, result.error, room);
-    return;
-  }
-
-  room.state = result.state;
-  room.version += 1;
-  broadcastSnapshot(room);
-}
-
-function handleShuffleRackCommand(room: GameRoom, connection: WebSocket, baseVersion: number): void {
-  if (!canApplyCommand(room, connection, baseVersion)) return;
-
-  room.state = shuffleCurrentRack(room.state);
-  room.version += 1;
-  broadcastSnapshot(room);
-}
-
-function handleRefreshRackCommand(room: GameRoom, connection: WebSocket, baseVersion: number): void {
-  if (!canApplyCommand(room, connection, baseVersion)) return;
-
-  room.state = refreshRack(room.state);
-  room.version += 1;
-  broadcastSnapshot(room);
-}
-
-function canApplyCommand(room: GameRoom, connection: WebSocket, baseVersion: number): boolean {
-  if (baseVersion === room.version) return true;
-
-  rejectCommand(connection, "version_mismatch", room);
-  return false;
-}
-
-function rejectCommand(connection: WebSocket, reason: string, room: GameRoom): void {
-  sendJson(connection, {
-    type: "command_rejected",
-    reason,
-    currentVersion: room.version,
-  });
-  sendSnapshot(connection, room);
-}
-
-function shuffleCurrentRack(state: GameState): GameState {
-  if (state.status === "finished") return state;
-
-  return {
-    ...state,
-    players: {
-      ...state.players,
-      [state.currentPlayerId]: {
-        ...state.players[state.currentPlayerId],
-        rack: shuffleTiles(state.players[state.currentPlayerId].rack),
-      },
-    },
-  };
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
@@ -219,36 +109,14 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
 }
 
-function parseSocketMessage(message: string): z.infer<typeof socketMessageSchema> | null {
-  try {
-    const input = JSON.parse(message) as unknown;
-    const result = socketMessageSchema.safeParse(input);
-    return result.success ? result.data : null;
-  } catch {
-    return null;
-  }
-}
-
-function broadcastSnapshot(room: GameRoom): void {
-  for (const connection of room.connections) {
-    sendSnapshot(connection, room);
-  }
-}
-
-function sendSnapshot(connection: WebSocket, room: GameRoom): void {
-  sendJson(connection, {
-    type: "snapshot",
-    matchId: room.matchId,
-    state: room.state,
-    version: room.version,
-  });
-}
-
-function sendJson(connection: WebSocket, body: unknown): void {
-  connection.send(JSON.stringify(body));
-}
-
 function writeJson(response: ServerResponse, statusCode: number, body: unknown): void {
   response.writeHead(statusCode, { "Content-Type": "application/json" });
   response.end(JSON.stringify(body));
+}
+
+async function shutdown(signal: NodeJS.Signals): Promise<void> {
+  console.log("Received shutdown signal", { signal });
+  server.close();
+  webSocketServer.close();
+  await closeGameRoomPersistence();
 }

@@ -64,6 +64,11 @@ Current state:
 - Make finish processing idempotent so ratings cannot be applied twice.
 - Move rating finalization into a shared package or service boundary once the game server owns terminal match writes.
 
+Current state:
+
+- The game server persists accepted websocket command events and latest snapshots to Postgres.
+- Match finish and rating finalization are still handled by the API HTTP event path and need to move behind an idempotent game-server-owned finish flow.
+
 ## Notes
 
 - The game server is client-authoritative for now, matching the current product decision.
