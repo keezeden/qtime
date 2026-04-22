@@ -1,4 +1,4 @@
-import { calculateExpectedScore, calculateTwoPlayerEloUpdates } from './elo';
+import { calculateExpectedScore, calculateTwoPlayerEloUpdates } from '@qtime/game';
 
 describe('ELO rating calculations', () => {
   it('calculates an even expected score for equal ratings', () => {

@@ -1,4 +1,12 @@
 export {
+  calculateEloRating,
+  calculateExpectedScore,
+  calculateTwoPlayerEloUpdates,
+  type EloPlayerResult,
+  type EloRatingUpdate,
+  type EloScore,
+} from "./src/elo";
+export {
   canBuildWord,
   createGame,
   DEFAULT_TARGET_SCORE,

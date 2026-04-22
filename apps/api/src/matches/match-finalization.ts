@@ -1,11 +1,11 @@
 import { ConflictException } from '@nestjs/common';
-import { MatchResult, MatchStatus } from '../generated/prisma/enums';
-import { Prisma } from '../generated/prisma/client';
 import {
   calculateTwoPlayerEloUpdates,
   type EloPlayerResult,
   type EloRatingUpdate,
-} from '../ratings/elo';
+} from '@qtime/game';
+import { MatchResult, MatchStatus } from '../generated/prisma/enums';
+import { Prisma } from '../generated/prisma/client';
 
 const ELO_K_FACTOR = 32;
 const RATING_ALGORITHM = 'elo-v1';
