@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { URL } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
-import { createGame, refreshRack, shuffleTiles, type GameState } from "@qtime/game";
+import { createGame, refreshRack, shuffleTiles, submitWord, type GameState } from "@qtime/game";
 import { z } from "zod";
 
 const port = Number.parseInt(process.env.GAME_SERVER_PORT ?? "3002", 10);
@@ -28,6 +28,11 @@ const socketMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("shuffle_rack"),
     baseVersion: z.number().int().nonnegative(),
+  }),
+  z.object({
+    type: z.literal("submit_word"),
+    baseVersion: z.number().int().nonnegative(),
+    word: z.string(),
   }),
 ]);
 
@@ -140,10 +145,25 @@ function attachConnection(room: GameRoom, connection: WebSocket): void {
     if (input.type === "ping") sendJson(connection, { type: "pong" });
     if (input.type === "refresh_rack") handleRefreshRackCommand(room, connection, input.baseVersion);
     if (input.type === "shuffle_rack") handleShuffleRackCommand(room, connection, input.baseVersion);
+    if (input.type === "submit_word") handleSubmitWordCommand(room, connection, input.baseVersion, input.word);
   });
   connection.on("close", () => {
     room.connections.delete(connection);
   });
+}
+
+function handleSubmitWordCommand(room: GameRoom, connection: WebSocket, baseVersion: number, word: string): void {
+  if (!canApplyCommand(room, connection, baseVersion)) return;
+
+  const result = submitWord(room.state, word);
+  if (result.error) {
+    rejectCommand(connection, result.error, room);
+    return;
+  }
+
+  room.state = result.state;
+  room.version += 1;
+  broadcastSnapshot(room);
 }
 
 function handleShuffleRackCommand(room: GameRoom, connection: WebSocket, baseVersion: number): void {
@@ -165,13 +185,17 @@ function handleRefreshRackCommand(room: GameRoom, connection: WebSocket, baseVer
 function canApplyCommand(room: GameRoom, connection: WebSocket, baseVersion: number): boolean {
   if (baseVersion === room.version) return true;
 
+  rejectCommand(connection, "version_mismatch", room);
+  return false;
+}
+
+function rejectCommand(connection: WebSocket, reason: string, room: GameRoom): void {
   sendJson(connection, {
     type: "command_rejected",
-    reason: "version_mismatch",
+    reason,
     currentVersion: room.version,
   });
   sendSnapshot(connection, room);
-  return false;
 }
 
 function shuffleCurrentRack(state: GameState): GameState {

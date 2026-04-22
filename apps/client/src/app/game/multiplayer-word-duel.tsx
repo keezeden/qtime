@@ -60,6 +60,10 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
     setMessage("Connection to the game server was interrupted.");
   }, []);
 
+  const handleCommandRejected = useCallback((reason: string): void => {
+    setMessage(reason);
+  }, []);
+
   const pollEvents = useCallback(async (matchId: number): Promise<void> => {
     const events = await fetchGameEvents(matchId, version);
     const latestEvent = events.at(-1);
@@ -87,6 +91,7 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
   const gameSocket = useGameSocket({
     matchId: match?.id ?? null,
     websocketUrl: gameSocketUrl,
+    onCommandRejected: handleCommandRejected,
     onSnapshot: applySocketSnapshot,
     onConnectionError: handleSocketError,
   });
@@ -145,6 +150,11 @@ export function MultiplayerWordDuel({ user }: Props): React.ReactElement {
 
   async function commitWord(): Promise<void> {
     if (!game || !match || !isLocalTurn) return;
+
+    if (gameSocket.sendCommand({ type: "submit_word", baseVersion: version, word: wordEntry })) {
+      clearSelectedTiles();
+      return;
+    }
 
     const result = submitWord(game, wordEntry);
 

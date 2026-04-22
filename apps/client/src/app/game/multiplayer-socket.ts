@@ -28,6 +28,11 @@ export type GameSocketCommand =
   | {
       type: "shuffle_rack";
       baseVersion: number;
+    }
+  | {
+      type: "submit_word";
+      baseVersion: number;
+      word: string;
     };
 
 const gameSocketMessageSchema = z.discriminatedUnion("type", [
